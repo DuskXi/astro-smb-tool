@@ -1,0 +1,151 @@
+"""打包面:**入口点指向的包必须真的在 wheel 里。**
+
+这条是补给一次真事故的:`astro-smb-tool-qt` 这个入口点一直有,而
+`astro_smb_qt` **不在** `[tool.hatch.build.targets.wheel].packages` 里 ——
+`pip install` 之后跑那条命令直接 ImportError。
+
+而它在本地**完全看不出来**:wheel 能构建、单测全绿、`uv run` 也正常 ——
+因为本地跑的是**源码树**,根本不经过 wheel。只有真正装一次才会暴露。
+"""
+from __future__ import annotations
+
+import re
+import tomllib
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parents[1]
+PYPROJECT = ROOT / "pyproject.toml"
+
+
+def _cfg() -> dict:
+    return tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
+
+
+class TestEntryPointsResolve:
+
+    def test_every_script_target_is_a_packaged_module(self):
+        cfg = _cfg()
+        packaged = set(cfg["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"])
+        missing = []
+        for name, target in (cfg["project"].get("scripts") or {}).items():
+            top = target.split(":")[0].split(".")[0]
+            if top not in packaged:
+                missing.append(f"{name} → {target}(顶层包 {top} 不在 wheel 里)")
+        assert not missing, (
+            "这些入口点指向的包不会被打进 wheel —— `pip install` 之后一跑就 "
+            "ImportError,而本地(源码树)完全正常:\n  " + "\n  ".join(missing))
+
+    def test_every_script_target_actually_exists(self):
+        """顺带查一下目标模块/函数是不是真的在。"""
+        cfg = _cfg()
+        bad = []
+        for name, target in (cfg["project"].get("scripts") or {}).items():
+            mod, _, fn = target.partition(":")
+            path = ROOT.joinpath(*mod.split("."))
+            src = path.with_suffix(".py")
+            if not src.is_file():
+                src = path / "__init__.py"
+            if not src.is_file():
+                bad.append(f"{name}: 找不到模块 {mod}")
+                continue
+            if fn and not re.search(rf"^(async )?def {re.escape(fn)}\b",
+                                    src.read_text(encoding="utf-8"), re.M):
+                bad.append(f"{name}: {mod} 里没有 {fn}()")
+        assert not bad, bad
+
+
+class TestDataFilesShip:
+    """**非 .py 的东西也得进去。** 少一样就是一整块功能在装出来的包里失灵。"""
+
+    def test_the_pieces_that_are_not_python(self):
+        packaged = set(_cfg()["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"])
+        want = {
+            # 老 UI 的界面本体 —— 少了它 XamlReader.Load 直接失败
+            "astro_smb_gui": ["*.xaml"],
+            # 3D 天球页的静态资产(两套前端共用)
+            "astro_smb_app": ["web/*.js", "web/*.css", "web/*.html"],
+            # 翻译:少了 .mo 就永远是中文,而且不报错
+            "astro_smb": ["locale/*/LC_MESSAGES/*.mo"],
+        }
+        missing = []
+        for pkg, pats in want.items():
+            assert pkg in packaged, pkg
+            for pat in pats:
+                if not list((ROOT / pkg).glob(pat)):
+                    missing.append(f"{pkg}/{pat}")
+        assert not missing, (
+            f"这些随包数据在源码树里就找不到: {missing} —— "
+            "要么是路径变了,要么是构建步骤没跑(`.mo` 要 scripts/i18n_build.py 生成)")
+
+
+class TestEveryGuiEntryPointCanGetItsToolkit:
+    """**入口点在 wheel 里,不等于它跑得起来。**
+
+    `astro-smb-tool-qt` 一直在 `[project.scripts]` 里,而 `pyside6` 只在
+    `[dependency-groups].dev` —— 那个组**不进发行元数据**。于是
+    `pip install astro-smb-tool` 之后跑它:
+
+        ModuleNotFoundError: No module named 'PySide6'
+
+    本地一次都看不出来:`uv sync` 装了 dev 组,`uv run` 跑的是源码树。
+    是把 wheel 装进一个干净 venv 真的敲了一遍那三条命令才发现的。
+
+    工具包**故意不进必装依赖**(只用 CLI 的人不该被拖去下一百多兆),
+    所以这里要的不是"必装",而是**有一条明说的路**:声明成 extra。
+    """
+
+    #: 入口点 → (它需要的第三方包, 该由哪个 extra 提供)
+    TOOLKITS = {
+        "astro-smb-tool-qt": ("pyside6", "qt"),
+        "astro-smb-tool-gui": ("win32more", "winui"),
+    }
+
+    def test_each_one_is_declared_in_an_extra(self):
+        cfg = _cfg()
+        extras = cfg["project"].get("optional-dependencies") or {}
+        scripts = cfg["project"].get("scripts") or {}
+        bad = []
+        for entry, (dist, extra) in self.TOOLKITS.items():
+            if entry not in scripts:
+                continue                      # 入口点没了就不用管它的 extra
+            got = extras.get(extra) or []
+            if not any(d.lower().startswith(dist) for d in got):
+                bad.append(f"{entry} 要 {dist},而 [{extra}] 里没有: {got}")
+        assert not bad, "\n  ".join(["图形入口点拿不到它的工具包:", *bad])
+
+    def test_the_toolkits_stay_out_of_the_required_deps(self):
+        """反面:别为了"省事"把 Qt 塞进必装。
+
+        CLI 是这个包的一等入口,`pip install astro-smb-tool` 之后应该
+        几秒装完。真塞进去了,这条会红,而不是等用户抱怨下载慢。
+        """
+        deps = _cfg()["project"]["dependencies"]
+        heavy = [d for d in deps
+                 if d.lower().startswith(("pyside6", "pyqt", "win32more"))]
+        assert not heavy, f"图形工具包不该在必装依赖里: {heavy}"
+
+    def test_the_message_actually_tells_you_what_to_type(self, monkeypatch):
+        """**声明了 extra ≠ 用户知道要装它。**
+
+        没有这一层,`pip install astro-smb-tool` 之后跑图形入口拿到的是
+        `ModuleNotFoundError: No module named 'PySide6'` —— 他装的明明是
+        这个包,那句话对他毫无意义。所以两条入口点都要自己说清楚。
+
+        **行为验证**:把 `find_spec` 打成"找不到",看它说了什么。
+        只查源码里有没有那串字面量的话,改个函数名就静默失效了。
+        """
+        import importlib.util
+
+        from astro_smb_gui import app as winui_app
+        from astro_smb_qt import __main__ as qt_main
+
+        monkeypatch.setattr(importlib.util, "find_spec", lambda name: None)
+        for guard, extra in ((qt_main._require_toolkit, "[qt]"),
+                             (winui_app._require_toolkit, "[winui]")):
+            with pytest.raises(SystemExit) as e:
+                guard()
+            msg = str(e.value)
+            assert extra in msg, f"没告诉用户装哪个 extra: {msg[:120]}"
+            assert "pip install" in msg, f"没给可以照抄的命令: {msg[:120]}"

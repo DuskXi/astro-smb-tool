@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3D 天球</title>
+<link rel="stylesheet" href="./sky3d.css">
+</head>
+<body>
+  <!-- three.js 渲染画布挂到这里(JS 侧创建 canvas) -->
+  <div id="stage"></div>
+
+  <!-- 左上角读数:视场中心 + 悬停目标(与 Python 侧详情卡片互补) -->
+  <div id="hud">
+    <div id="hud-view" class="hud-line"></div>
+    <div id="hud-hover" class="hud-line hud-strong"></div>
+  </div>
+
+  <!-- 右下角操作提示 -->
+  <div id="tip">拖动旋转 · 滚轮缩放 · 双击回正</div>
+
+  <!-- 致命错误(three.js 缺失 / WebGL 不可用)时显示 -->
+  <div id="fatal" hidden></div>
+
+  <script type="module" src="./sky3d.js"></script>
+</body>
+</html>

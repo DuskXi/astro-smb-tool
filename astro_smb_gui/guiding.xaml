@@ -1,0 +1,210 @@
+<Grid
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RowSpacing="6" Padding="4">
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="*"/>
+  </Grid.RowDefinitions>
+
+  <!-- 顶部工具栏:刷新 + 时间窗缩放/平移 + 状态。
+       「窗口/位置」只服务段视图的大折线图,仪表盘视图下会自动置灰
+       (_update_win_controls 同时看当前视图与选中行类型)。 -->
+  <Grid Grid.Row="0" ColumnSpacing="8">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Button x:Name="RefreshBtn" Grid.Column="0" Content="刷新"/>
+    <ProgressRing x:Name="BusyRing" Grid.Column="1" Width="20" Height="20" IsActive="False"/>
+    <TextBlock Grid.Column="2" Text="窗口" VerticalAlignment="Center" Opacity="0.7"/>
+    <ComboBox x:Name="WindowCombo" Grid.Column="3" MinWidth="100" SelectedIndex="0" IsEnabled="False">
+      <ComboBoxItem Content="全段"/>
+      <ComboBoxItem Content="60 分钟"/>
+      <ComboBoxItem Content="30 分钟"/>
+      <ComboBoxItem Content="10 分钟"/>
+      <ComboBoxItem Content="5 分钟"/>
+    </ComboBox>
+    <Slider x:Name="PosSlider" Grid.Column="4" Width="180" Minimum="0" Maximum="1000"
+            Value="0" IsEnabled="False" VerticalAlignment="Center"/>
+    <TextBlock x:Name="StatusText" Grid.Column="5" VerticalAlignment="Center"
+               Opacity="0.8" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True"
+               Text="连接设备后点「刷新」加载导星日志"/>
+  </Grid>
+
+  <!-- 主体:左侧汇总+段列表(始终可见) + 右侧分析区(段视图 / 仪表盘视图 互斥) -->
+  <Grid x:Name="ContentGrid" Grid.Row="1" ColumnSpacing="10" Visibility="Collapsed">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="360"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <Grid Grid.Column="0" RowSpacing="6">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <TextBlock x:Name="SummaryText" Grid.Row="0" FontSize="11" Opacity="0.8"
+                 TextWrapping="Wrap" IsTextSelectionEnabled="True"
+                 Visibility="Collapsed" Text=""/>
+
+      <!-- 分组说明 + 一键折叠/展开(段列表按拍摄目标分组,碎段默认折叠) -->
+      <Grid Grid.Row="1" ColumnSpacing="6">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock x:Name="GroupHintText" Grid.Column="0" FontSize="11" Opacity="0.6"
+                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Text=""
+                   ToolTipService.ToolTip="导星段按 Autorun 日志的拍摄目标块归组。&#10;组头显示合并 RMS(按帧数加权)、段数与起止;点组头折叠/展开。&#10;组头右侧的「仪表盘」按钮把右侧换成该组全部段聚合的分析视图(散点/直方图/滚动 RMS/脉冲/SNR/自相关/分段对比/每张 sub 的 RMS);点任意段即切回段视图。&#10;短于 5 分钟且不足 100 帧的碎段(settle / 重选星的尝试)会连续折叠成一条摘要,点摘要展开明细。&#10;匹配不到任何目标块的段归入「其它」组。"/>
+        <Button x:Name="CollapseBtn" Grid.Column="1" Content="全部折叠"
+                FontSize="11" Padding="8,2,8,2"/>
+      </Grid>
+
+      <ListView x:Name="SectionList" Grid.Row="2" SelectionMode="Single">
+        <ListView.ItemContainerStyle>
+          <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="10,5,10,5"/>
+          </Style>
+        </ListView.ItemContainerStyle>
+      </ListView>
+    </Grid>
+
+    <!-- 右侧分析区宿主:两个视图叠在同一格里,靠 Visibility 互斥切换。
+         段视图 = 选中某个导星段(大曲线 + 该段统计);
+         仪表盘视图 = 某个目标组全部段的聚合分析(无大曲线),
+         由 _guidedash.GuideDashboard 把自己的根挂进 DashHost。 -->
+    <Grid Grid.Column="1">
+      <Grid x:Name="SegmentView" RowSpacing="6">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="*"/>
+          <RowDefinition Height="Auto"/>
+          <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- 标题行:段标题 + 语义徽章(胶囊样式与仪表盘汇总卡同一份配色表) -->
+        <StackPanel Grid.Row="0" Spacing="4">
+          <TextBlock x:Name="DetailTitle" FontSize="15" FontWeight="SemiBold"
+                     TextTrimming="CharacterEllipsis" Text="从左侧选择一个导星段"/>
+          <StackPanel x:Name="DetailBadges" Orientation="Horizontal" Spacing="6"
+                      Visibility="Collapsed"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" CornerRadius="6" BorderThickness="1"
+                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+          <Grid>
+            <Canvas x:Name="CurveCanvas" Background="Transparent"/>
+            <TextBlock x:Name="CanvasHint" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Opacity="0.6" TextWrapping="Wrap" TextAlignment="Center"
+                       Text="从左侧选择一个导星段查看 RA/DEC 偏差曲线"/>
+          </Grid>
+        </Border>
+
+        <!-- 统计图表区:漂移卡 / 散点 / 直方图 / 滚动 RMS / 脉冲 / 周期图 / SNR / 逐段 RMS
+             (窗口不够宽时横滚;数据全部在工作线程预计算,UI 只画) -->
+        <ScrollViewer x:Name="ChartsScroll" Grid.Row="2" Visibility="Collapsed"
+                      HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"
+                      HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled">
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <StackPanel Spacing="2">
+              <TextBlock Text="漂移速率" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <StackPanel Width="160" Height="150" Padding="10" Spacing="6">
+                  <TextBlock x:Name="DriftRaText" FontSize="13" TextWrapping="Wrap" Text="—"/>
+                  <TextBlock x:Name="DriftDecText" FontSize="13" TextWrapping="Wrap" Text="—"/>
+                  <TextBlock x:Name="DriftHintText" FontSize="11" TextWrapping="Wrap" Text=""/>
+                  <TextBlock FontSize="10" Opacity="0.55" TextWrapping="Wrap"
+                             Text="选中段原始偏差的线性趋势;DEC 漂移大常提示极轴误差"/>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="偏差散点(RA/DEC)" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Canvas x:Name="ScatterCanvas" Width="220" Height="150" Background="Transparent"/>
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="偏差直方图" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Canvas x:Name="HistCanvas" Width="220" Height="150" Background="Transparent"/>
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="滚动 RMS(60 秒窗)" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Canvas x:Name="RollCanvas" Width="220" Height="150" Background="Transparent"/>
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="修正脉冲" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Canvas x:Name="PulseCanvas" Width="220" Height="150" Background="Transparent"/>
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="RA 周期图(蜗杆周期)" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Canvas x:Name="PeriodCanvas" Width="220" Height="150" Background="Transparent"/>
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="SNR / 星质量" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Canvas x:Name="SnrCanvas" Width="220" Height="150" Background="Transparent"/>
+              </Border>
+            </StackPanel>
+            <StackPanel Spacing="2">
+              <TextBlock Text="逐段 RMS 总览" FontSize="11" Opacity="0.7"/>
+              <Border CornerRadius="4" BorderThickness="1"
+                      BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                <Canvas x:Name="SegRmsCanvas" Width="220" Height="150" Background="Transparent"/>
+              </Border>
+            </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+
+        <!-- 段统计卡:容器/圆角/边距与仪表盘汇总卡同款(浏览页详情卡那套排版语言) -->
+        <Border x:Name="StatsCard" Grid.Row="3" CornerRadius="6" Padding="12,8,12,9"
+                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+                BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                Visibility="Collapsed">
+          <StackPanel Spacing="4">
+            <Grid ColumnSpacing="8">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+              </Grid.ColumnDefinitions>
+              <TextBlock Grid.Column="0" Text="段统计" FontSize="11" Opacity="0.55"/>
+              <Border Grid.Column="1" Height="1" Background="#3C808080"
+                      VerticalAlignment="Center"/>
+            </Grid>
+            <TextBlock x:Name="StatsText" FontSize="12" Opacity="0.85"
+                       TextWrapping="Wrap" IsTextSelectionEnabled="True" Text=""/>
+          </StackPanel>
+        </Border>
+      </Grid>
+
+      <Grid x:Name="DashHost" Visibility="Collapsed"/>
+    </Grid>
+  </Grid>
+
+  <!-- 空态占位(未连接 / 无日志) -->
+  <TextBlock x:Name="EmptyHint" Grid.Row="1" HorizontalAlignment="Center" VerticalAlignment="Center"
+             Opacity="0.6" TextAlignment="Center" TextWrapping="Wrap"
+             Text="尚未加载导星日志&#10;连接设备后点「刷新」,或从「拍摄记录」页跳转"/>
+</Grid>

@@ -1,0 +1,109 @@
+<Grid
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="*"/>
+    <RowDefinition Height="Auto"/>
+  </Grid.RowDefinitions>
+
+  <!-- 顶栏:连接。HostBox 是可编辑 ComboBox:可手输 IP,也可从设备记录里选
+       (下拉项显示 端口可达/在线 与时延;选中即连接) -->
+  <Grid Grid.Row="0" Padding="12,10,12,6" ColumnSpacing="8">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <TextBlock Grid.Column="0" Text="设备" VerticalAlignment="Center"/>
+    <ComboBox x:Name="HostBox" Grid.Column="1" Width="260" IsEditable="True"
+              PlaceholderText="设备地址(可手输 IP)"/>
+    <Button x:Name="ConnectBtn" Grid.Column="2" Content="连接"/>
+    <Button x:Name="ForgetBtn" Grid.Column="3" Content="忘记" FontSize="12"/>
+    <ProgressRing x:Name="BusyRing" Grid.Column="4" Width="22" Height="22" IsActive="False"/>
+    <TextBlock x:Name="StatusText" Grid.Column="5" Text="未连接"
+               VerticalAlignment="Center" Opacity="0.75" TextTrimming="CharacterEllipsis"/>
+  </Grid>
+
+  <InfoBar x:Name="NoticeBar" Grid.Row="1" IsOpen="False" Margin="12,0,12,4"/>
+
+  <!-- 导航 + 页面宿主 -->
+  <NavigationView x:Name="NavView" Grid.Row="2"
+                  PaneDisplayMode="Left" IsSettingsVisible="False"
+                  IsBackButtonVisible="Collapsed" OpenPaneLength="180"
+                  IsPaneToggleButtonVisible="True">
+    <NavigationView.MenuItems>
+      <NavigationViewItem x:Name="NavBrowse" Content="浏览" Tag="browse" IsSelected="True">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Folder"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavRecords" Content="拍摄记录" Tag="records">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Library"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavGuiding" Content="导星分析" Tag="guiding">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Target"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavSky3D" Content="3D 天球" Tag="sky3d">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Globe"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavFitsView" Content="影像查看" Tag="fitsview">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="View"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavSpace" Content="空间分析" Tag="space">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Calculator"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavDevices" Content="设备管理" Tag="devices">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Contact"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavScan" Content="扫描设备" Tag="scan">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Find"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+      <NavigationViewItem x:Name="NavMonitor" Content="传输" Tag="monitor">
+        <NavigationViewItem.Icon><SymbolIcon Symbol="Sync"/></NavigationViewItem.Icon>
+      </NavigationViewItem>
+    </NavigationView.MenuItems>
+    <Grid x:Name="PageHost" Padding="4,4,4,4"/>
+  </NavigationView>
+
+  <!-- 底:传输队列 -->
+  <Grid Grid.Row="3" Padding="12,4,12,10" RowSpacing="4">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+    <Grid Grid.Row="0" ColumnSpacing="8">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Column="0" Text="传输队列" FontWeight="SemiBold" VerticalAlignment="Center"/>
+      <TextBlock Grid.Column="1" Text="并发" VerticalAlignment="Center" Opacity="0.7" Margin="8,0,0,0"/>
+      <ComboBox x:Name="WorkersBox" Grid.Column="2" MinWidth="56" SelectedIndex="2">
+        <ComboBoxItem Content="1"/>
+        <ComboBoxItem Content="2"/>
+        <ComboBoxItem Content="3"/>
+        <ComboBoxItem Content="4"/>
+        <ComboBoxItem Content="6"/>
+      </ComboBox>
+      <TextBlock x:Name="TransferSummary" Grid.Column="3" Text="" Opacity="0.7"
+                 VerticalAlignment="Center" Margin="8,0,0,0"/>
+      <Button x:Name="CancelAllBtn" Grid.Column="4" Content="全部取消" FontSize="12"/>
+      <Button x:Name="ClearDoneBtn" Grid.Column="5" Content="清除已完成" FontSize="12"/>
+    </Grid>
+    <ListView x:Name="TransferList" Grid.Row="1" MaxHeight="150" SelectionMode="None">
+      <ListView.ItemContainerStyle>
+        <Style TargetType="ListViewItem">
+          <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+          <Setter Property="Padding" Value="10,4,10,4"/>
+        </Style>
+      </ListView.ItemContainerStyle>
+    </ListView>
+  </Grid>
+</Grid>

@@ -1,0 +1,73 @@
+[project]
+name = "astro-smb-tool"
+version = "0.1.0"
+description = "SMB file management and astrophotography log analysis tool"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { file = "LICENSE" }
+dependencies = [
+    "impacket>=0.13.1",
+    "numpy>=2.0",
+    "pillow>=10.0",
+]
+
+[project.scripts]
+astro-smb-tool = "astro_smb.cli:main"
+# 唯一 GUI 入口。曾经并行存在的 astro_smb_winui / astro_smb_tauri / sidecar
+# 已在 B1 阶段整体删除(winui 是本包的逐字副本且已落后数千行)。
+astro-smb-tool-gui = "astro_smb_gui.app:main"
+# 跨平台交付(Uno 删除后由它承担);Windows 上与上面那套并存
+astro-smb-tool-qt = "astro_smb_qt.__main__:main"
+# 跨平台界面(开发中)。Python 是主进程,负责拉起并保活 C# 渲染子进程。
+
+[project.optional-dependencies]
+# 老 UI(WinUI3/win32more)只在 Windows 上有意义。**标记不能省** ——
+# 没有它,mac 上一句 `uv sync --extra winui` 就会因为装不上而整个失败。
+winui = [
+    "win32more>=0.8.1; sys_platform == 'win32'",
+]
+
+# 跨平台界面(`astro-smb-tool-qt`)。**不放进必装依赖**:只用 CLI 的人
+# 不该被拖去下一百多兆的 Qt。代价是普通安装下那条入口点跑不起来,
+# 所以 `astro_smb_qt/__main__.py` 开头会把缺它这件事说成人话。
+qt = [
+    "pyside6>=6.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+# **`astro_smb_qt` 必须在这里。** 它是跨平台交付的那一套,而入口点
+# `astro-smb-tool-qt` 一直是有的 —— 漏掉它的后果是 `pip install` 之后
+# 跑那条命令直接 ImportError,而 wheel 构建、单测、本地 `uv run` 全都正常
+# (本地跑的是源码树,根本不经过 wheel)。2026-08-05 才发现。
+packages = ["astro_smb", "astro_smb_app", "astro_smb_gui", "astro_smb_qt"]
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.21.0",
+    "pytest>=8.0",
+    # **跑测试请一律带 `-n auto`。** 串行不只是"没用上多核",它比并行**总共**
+    # 还多烧 4~5 倍 CPU:Qt 那七八百条测试全在一个 QApplication 里建控件,
+    # 控件越堆越多、后面的测试越跑越慢(超线性)。实测同一份代码:
+    # 串行 23 分钟没跑完,`-n 12` 半分钟跑完全部。
+    "pytest-xdist>=3.6",
+    # GUI 层的测试要 import 页面模块。**必须在 dev 组里**:它原来只在
+    # optional-dependencies.winui 下,`uv sync` 不装,于是本机 7 个测试模块
+    # 直接 collection error、整轮中断,真实回归被噪音淹没。
+    # 平台标记不能省 —— win32more 是 Windows 专属,Linux/macOS CI 装不上。
+    "win32more>=0.8.1; sys_platform == 'win32'",
+    # **跨平台交付的那一套,却一直不在任何依赖组里。** 后果是 `uv sync`
+    # 之后跑测试:2669 条只跑 1353 条 —— **少跑的一半正是 Qt 前端**,
+    # 而 CI 日志尾巴上"1353 passed"和"2669 passed"长得一模一样。
+    # 这是这个仓库里最贵的那种缺陷:不报错、不缺字、只是没测。
+    "pyside6>=6.7",
+]
+
+[tool.pytest.ini_options]
+# 默认就并行。理由见 dependency-groups.dev 里 pytest-xdist 那条注释:
+# 串行不只是慢,是**总 CPU 也贵 4~5 倍**(单进程里 Qt 控件累积,越跑越慢)。
+# 想串行复现某条(比如查 QApplication 相关的顺序依赖)加 `-p no:xdist`。
+addopts = "-n auto"

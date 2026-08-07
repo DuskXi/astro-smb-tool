@@ -1,0 +1,84 @@
+<Grid
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RowSpacing="8" Padding="4">
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="*"/>
+  </Grid.RowDefinitions>
+
+  <!-- 工具栏:刷新(重新枚举本机卷 + 重新探测已记录设备) -->
+  <Grid Grid.Row="0" ColumnSpacing="8">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <TextBlock Grid.Column="0" Text="设备管理" FontWeight="SemiBold" FontSize="15"
+               VerticalAlignment="Center"/>
+    <Button x:Name="RefreshBtn" Grid.Column="1" Content="刷新"/>
+    <ProgressRing x:Name="RefreshRing" Grid.Column="2" Width="20" Height="20"
+                  IsActive="False"/>
+    <TextBlock x:Name="StatusText" Grid.Column="3" Text="" VerticalAlignment="Center"
+               Opacity="0.75" Margin="4,0,0,0" TextTrimming="CharacterEllipsis"/>
+  </Grid>
+
+  <!-- 手动添加:自动发现只覆盖有 ZWO 特征的卷,卡放在别处/移动硬盘时用这里 -->
+  <Border Grid.Row="1" CornerRadius="6" Padding="12,10"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+    <Grid ColumnSpacing="8" RowSpacing="4">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="Auto"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock Grid.Row="0" Grid.Column="0" Text="手动添加" FontSize="13"
+                 VerticalAlignment="Center"/>
+      <TextBox x:Name="AddBox" Grid.Row="0" Grid.Column="1"
+               PlaceholderText="SMB 地址(192.0.2.225)或本地文件夹(E:\ 、 D:\ASIAIR)"/>
+      <Button x:Name="AddBtn" Grid.Row="0" Grid.Column="2" Content="添加"/>
+      <TextBlock x:Name="AddHint" Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2"
+                 Text="添加只写入本机的设备记录,不会改动设备上的任何文件"
+                 FontSize="11" Opacity="0.55" TextWrapping="Wrap"/>
+    </Grid>
+  </Border>
+
+  <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto"
+                HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="8" Padding="0,0,12,12">
+      <TextBlock x:Name="RecordHead" Text="已记录的设备" FontSize="12" Opacity="0.55"
+                 Margin="2,2,0,0"/>
+
+      <!-- 空状态:一台都没记过时的引导 -->
+      <Border x:Name="EmptyCard" CornerRadius="6" Padding="14,12"
+              Visibility="Collapsed"
+              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+        <StackPanel Spacing="6">
+          <TextBlock Text="还没有任何设备记录" FontSize="14" FontWeight="SemiBold"/>
+          <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.75"
+                     Text="连接成功过的设备会自动记在这里。现在可以:"/>
+          <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.75"
+                     Text="◇  ASIAIR 已开机并接入局域网 — 去「扫描设备」页找一台"/>
+          <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.75"
+                     Text="◇  存储卡已从盒子里拔出插在电脑上 — 点上方「刷新」重新枚举本机磁盘"/>
+          <TextBlock TextWrapping="Wrap" FontSize="12" Opacity="0.75"
+                     Text="◇  卡里的资料被拷到了别处 — 用上方「手动添加」填那个文件夹"/>
+          <Button x:Name="GoScanBtn" Content="去扫描设备" Margin="0,4,0,0"
+                  HorizontalAlignment="Left"/>
+        </StackPanel>
+      </Border>
+
+      <StackPanel x:Name="CardHost" Spacing="8"/>
+
+      <TextBlock x:Name="VolHead" Text="本机磁盘(未加入设备记录)" FontSize="12"
+                 Opacity="0.55" Margin="2,8,0,0" Visibility="Collapsed"/>
+      <StackPanel x:Name="VolHost" Spacing="8"/>
+    </StackPanel>
+  </ScrollViewer>
+</Grid>

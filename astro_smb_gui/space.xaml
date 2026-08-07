@@ -1,0 +1,93 @@
+<Grid
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RowSpacing="6">
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="*"/>
+  </Grid.RowDefinitions>
+
+  <Grid Grid.Row="0" ColumnSpacing="6">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+    <ComboBox x:Name="ShareCombo" Grid.Column="0" MinWidth="150" PlaceholderText="选择共享"/>
+    <Button x:Name="UpBtn" Grid.Column="1" Content="上级" IsEnabled="False"/>
+    <Button x:Name="ScanBtn" Grid.Column="2" Content="扫描此目录"/>
+    <ProgressRing x:Name="ScanRing" Grid.Column="3" Width="20" Height="20" IsActive="False"/>
+    <TextBlock x:Name="PathText" Grid.Column="4" Text="选择共享后点「扫描此目录」(不会自动全盘扫描)"
+               VerticalAlignment="Center" Opacity="0.8" TextTrimming="CharacterEllipsis"
+               IsTextSelectionEnabled="True"/>
+    <TextBlock x:Name="CacheHint" Grid.Column="5" Text="" VerticalAlignment="Center"
+               FontSize="11" Opacity="0.6"/>
+  </Grid>
+
+  <!-- 状态栏:左=当前根统计(含「已省略 N 个小块」),右=悬停读数
+       (悬停读数与共享 ToolTip 同源;ToolTip 万一不可用时它就是唯一出口) -->
+  <Grid Grid.Row="1" ColumnSpacing="10">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="Auto"/>
+    </Grid.ColumnDefinitions>
+    <TextBlock x:Name="StatusText" Grid.Column="0" Text="" Opacity="0.75" FontSize="12"
+               TextTrimming="CharacterEllipsis"/>
+    <TextBlock x:Name="HoverText" Grid.Column="1" Text="" Opacity="0.9" FontSize="12"
+               FontWeight="SemiBold" MaxWidth="380" TextTrimming="CharacterEllipsis"/>
+  </Grid>
+
+  <Grid Grid.Row="2" ColumnSpacing="10">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="330"/>
+    </Grid.ColumnDefinitions>
+    <!-- 三层 Canvas(自下而上):
+         · TreeCanvas —— 色块(可命中,承载全部指针事件与共享 ToolTip)。
+           每次渲染整批一次 XamlReader.Load 铺进来(见 _space._flush_treemap)。
+         · HiliteCanvas —— 只有一个常驻的联动高亮描边框。批量绘图每帧重建色块、
+           拿不到稳定的单块引用去改描边,所以高亮独立成层,只挪位置不重建。
+         · LabelCanvas —— 只放文字(IsHitTestVisible=False,指针穿透;子元素
+           继承,批量片段里不必再逐个设)。标签永远压在色块之上,嵌套布局
+           已避开父块的标题带,不会互相遮挡。
+         三层必须同步 ScaleTransform(拖窗口期间整体缩放,零重建)。 -->
+    <Border Grid.Column="0" CornerRadius="4" BorderThickness="1"
+            BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+      <Grid>
+        <Canvas x:Name="TreeCanvas" Background="Transparent"/>
+        <Canvas x:Name="HiliteCanvas" IsHitTestVisible="False">
+          <Rectangle x:Name="HiliteRect" Visibility="Collapsed"
+                     Stroke="#FFFFC840" StrokeThickness="2.5"
+                     RadiusX="2" RadiusY="2"/>
+        </Canvas>
+        <Canvas x:Name="LabelCanvas" IsHitTestVisible="False"/>
+      </Grid>
+    </Border>
+    <Grid Grid.Column="1">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <!-- 「○」是「图中未画出」的图例:块预算/尺寸裁掉的直接子目录会在行尾标一个
+           淡色小圆点(见 _space._apply_row_marks);说明放在这里的 ToolTip 上,
+           避免为每一行新建 ToolTip 对象(每块/每行挂 ToolTip 曾是主要卡顿源) -->
+      <TextBlock Grid.Row="0" Text="目录树(点行联动图块 · ▶/▼ 展开折叠 · ○ 图中未画出)"
+                 FontWeight="SemiBold" Margin="2,0,0,6"
+                 TextTrimming="CharacterEllipsis"
+                 ToolTipService.ToolTip="○ = 该目录在左侧图中没有对应色块(太小或超出块预算)。&#10;这一行仍然可点:点击即下钻,把它当作新的视图根看清内部。"/>
+      <ListView x:Name="DetailList" Grid.Row="1" SelectionMode="Single">
+        <ListView.ItemContainerStyle>
+          <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="6,2,6,2"/>
+            <Setter Property="MinHeight" Value="28"/>
+          </Style>
+        </ListView.ItemContainerStyle>
+      </ListView>
+    </Grid>
+  </Grid>
+</Grid>

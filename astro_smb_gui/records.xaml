@@ -1,0 +1,269 @@
+<Grid
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    RowSpacing="8" Padding="4">
+  <Grid.RowDefinitions>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="Auto"/>
+    <RowDefinition Height="*"/>
+  </Grid.RowDefinitions>
+
+  <!-- 顶部工具栏: 刷新 / 夜次选择 / 合并计划开关 / 状态 -->
+  <Grid Grid.Row="0" ColumnSpacing="8">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="Auto"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+    <Button x:Name="RefreshBtn" Grid.Column="0" Content="刷新"/>
+    <ProgressRing x:Name="RefreshRing" Grid.Column="1" Width="20" Height="20" IsActive="False"/>
+    <TextBlock Grid.Column="2" Text="夜次" VerticalAlignment="Center" Opacity="0.8"/>
+    <ComboBox x:Name="NightCombo" Grid.Column="3" MinWidth="240" PlaceholderText="(无数据)"/>
+    <!-- 合并计划: 关=平铺目标列表; 开=按 Plan 分组(组头可点击折叠) -->
+    <TextBlock Grid.Column="4" Text="合并计划" VerticalAlignment="Center" Opacity="0.8"
+               FontSize="12"/>
+    <!-- 默认开启:按 Plan 分组顺序看整夜更符合实际使用 -->
+    <ToggleSwitch x:Name="MergePlanToggle" Grid.Column="5" OnContent="" OffContent=""
+                  IsOn="True" MinWidth="0" VerticalAlignment="Center"/>
+    <TextBlock x:Name="StatusText" Grid.Column="6" Text="尚未读取日志"
+               VerticalAlignment="Center" Opacity="0.75" FontSize="12"
+               TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True"/>
+  </Grid>
+
+  <!-- 实时拍摄横幅: 日志只在会话结束后落盘, 目标列表永远是历史;
+       正在进行的拍摄由 watcher 提供, 在此明示 -->
+  <Border x:Name="LiveBanner" Grid.Row="1" CornerRadius="6" Padding="12,8"
+          Visibility="Collapsed"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+          BorderThickness="1"
+          BorderBrush="{ThemeResource AccentFillColorDefaultBrush}">
+    <TextBlock x:Name="LiveText" FontSize="13" TextWrapping="Wrap"
+               IsTextSelectionEnabled="True"/>
+  </Border>
+
+  <!-- 夜次统计汇总卡(两列小字, 内容在工作线程算好) -->
+  <Border x:Name="NightStatsCard" Grid.Row="2" CornerRadius="6" Padding="12,8"
+          Visibility="Collapsed"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+    <Grid ColumnSpacing="18">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="*"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <TextBlock x:Name="NightStatsLeft" Grid.Column="0" FontSize="12"
+                 TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+      <TextBlock x:Name="NightStatsRight" Grid.Column="1" FontSize="12"
+                 TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+    </Grid>
+  </Border>
+
+  <!-- 整夜时间轴甘特图(数据在工作线程算好, UI 只按归一化区间画) -->
+  <Border x:Name="TimelineCard" Grid.Row="3" CornerRadius="6" Padding="12,6,12,4"
+          Visibility="Collapsed"
+          Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+    <StackPanel Spacing="2">
+      <TextBlock FontSize="10" Opacity="0.6"
+                 Text="整夜时间轴: 彩条=目标拍摄块(半透明=暂停/截断, 点击选中目标) · 绿条=导星覆盖 · 空隙=损失时间"/>
+      <Canvas x:Name="TimelineCanvas" Height="64" Background="Transparent"/>
+    </StackPanel>
+  </Border>
+
+  <!-- 主体: 左(目标列表+天球图) | 右(详情) -->
+  <Grid Grid.Row="4" ColumnSpacing="10">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="380"/>
+      <ColumnDefinition Width="*"/>
+    </Grid.ColumnDefinitions>
+
+    <!-- 左栏 -->
+    <Grid Grid.Column="0" RowSpacing="6">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+      <TextBlock Grid.Row="0" Text="目标列表" FontWeight="SemiBold" Margin="2,0,0,0"/>
+      <!-- 行内自带时间轨道(时刻 + 圆点 + 上下竖线): 容器**零垂直内边距**,
+           行间距靠行内容自身的 Margin 留出, 轨道竖线才能跨行连续 -->
+      <ListView x:Name="TargetList" Grid.Row="1" SelectionMode="Single">
+        <ListView.ItemContainerStyle>
+          <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="10,0,10,0"/>
+            <Setter Property="MinHeight" Value="0"/>
+          </Style>
+        </ListView.ItemContainerStyle>
+      </ListView>
+
+      <!-- 天球图(底层巡天底图 Image + 上层前景 Canvas) + 站点设置 -->
+      <Border Grid.Row="2" CornerRadius="6" Padding="8"
+              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+        <StackPanel Spacing="6">
+          <TextBlock x:Name="SkyTitleText" Text="全天位置(仰视: 北上 · 东左)"
+                     FontSize="12" Opacity="0.7"/>
+          <Grid Width="340" Height="340" HorizontalAlignment="Center">
+            <!-- 300 = 2×地平线半径(340/2-20), 与 Canvas 里的地平圈精确对齐 -->
+            <Image x:Name="SkyBgImage" Width="300" Height="300" Stretch="Uniform"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            <Canvas x:Name="SkyCanvas" Width="340" Height="340" Background="Transparent"/>
+          </Grid>
+          <TextBlock x:Name="SkyCreditText" FontSize="10" Opacity="0.65"
+                     TextWrapping="Wrap" Visibility="Collapsed"/>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="纬度" VerticalAlignment="Center" FontSize="12"/>
+            <TextBox x:Name="LatBox" Width="70" FontSize="12"/>
+            <TextBlock Text="经度" VerticalAlignment="Center" FontSize="12" Margin="6,0,0,0"/>
+            <TextBlock x:Name="LonText" Text="—" VerticalAlignment="Center" FontSize="12"
+                       Opacity="0.8"/>
+            <Button x:Name="SiteApplyBtn" Content="应用" FontSize="12" Margin="6,0,0,0"/>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <TextBlock Text="巡天底图" VerticalAlignment="Center" FontSize="12"/>
+            <ToggleSwitch x:Name="SurveyToggle" OnContent="" OffContent="" MinWidth="0"/>
+            <Button x:Name="SkyZoomBtn" Content="放大" FontSize="12" Margin="6,0,0,0"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+    </Grid>
+
+    <!-- 右栏: 目标详情(徽章行 + 两列 KV 表, 内容在工作线程算好) -->
+    <Grid Grid.Column="1" RowSpacing="6">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+      <TextBlock x:Name="DetailTitle" Grid.Row="0" Text="选择左侧目标查看详情"
+                 FontSize="18" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+      <TextBlock x:Name="DetailCoord" Grid.Row="1" Text="" FontSize="12" Opacity="0.75"
+                 IsTextSelectionEnabled="True"/>
+      <!-- 状态/计划/帧型/滤镜/尝试次数徽章(圆角胶囊, 代码里搭建) -->
+      <StackPanel x:Name="DetailBadges" Grid.Row="2" Orientation="Horizontal" Spacing="6"
+                  Visibility="Collapsed"/>
+      <!-- 两列 KV: 标签淡色 + 数值(可带迷你进度条/淡色副注), 与浏览页详情同风格 -->
+      <Grid x:Name="DetailGrid" Grid.Row="3" ColumnSpacing="12" RowSpacing="3"
+            Margin="0,2,0,0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+      </Grid>
+      <!-- 主镜星点/WCS + 同期 PHD2 的三证据诊断。记录页可直接启动共享后台，
+           不要求用户先进入 3D 天球。 -->
+      <Border x:Name="GuideQualityCard" Grid.Row="4" CornerRadius="6"
+              Padding="10,7,10,8" Visibility="Collapsed"
+              Background="{ThemeResource CardBackgroundFillColorDefaultBrush}"
+              BorderThickness="1"
+              BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+        <StackPanel Spacing="3">
+          <TextBlock Text="导星质量分析" FontSize="11" Opacity="0.58"/>
+          <TextBlock x:Name="GuideQualityHeadline" FontSize="13"
+                     FontWeight="SemiBold" TextWrapping="Wrap"
+                     IsTextSelectionEnabled="True"/>
+          <TextBlock x:Name="GuideQualityConfidence" FontSize="11" Opacity="0.68"
+                     TextWrapping="Wrap"/>
+          <Border x:Name="PolarCard" Visibility="Collapsed" CornerRadius="5"
+                  Padding="8,6,8,6" Margin="0,3,0,1" BorderThickness="1"
+                  BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Canvas x:Name="PolarPlot" Width="132" Height="132"/>
+              <StackPanel VerticalAlignment="Center" Spacing="3" MaxWidth="260">
+                <TextBlock Text="极轴误差" FontSize="11" Opacity="0.58"/>
+                <TextBlock x:Name="PolarTotal" FontSize="17" FontWeight="SemiBold"/>
+                <TextBlock x:Name="PolarAdvice" FontSize="11" Opacity="0.82"
+                           TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+                <TextBlock x:Name="PolarTrust" FontSize="10" Opacity="0.62"
+                           TextWrapping="Wrap"/>
+              </StackPanel>
+            </StackPanel>
+          </Border>
+          <TextBlock x:Name="GuideQualityFindings" FontSize="11" Opacity="0.82"
+                     TextWrapping="Wrap" IsTextSelectionEnabled="True"/>
+          <StackPanel Orientation="Horizontal" Spacing="7">
+            <ProgressRing x:Name="GuideQualityRing" Width="18" Height="18"
+                          IsActive="False" Visibility="Collapsed"/>
+            <Button x:Name="GuideQualityBtn" Content="开始分析" FontSize="11"
+                    Padding="9,3,9,3"/>
+          </StackPanel>
+        </StackPanel>
+      </Border>
+      <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="8">
+        <Button x:Name="OpenFilesBtn" Content="查看文件" IsEnabled="False"/>
+        <Button x:Name="GuidingBtn" Content="导星详情" IsEnabled="False"/>
+        <TextBlock x:Name="DirHint" Text="" VerticalAlignment="Center" FontSize="12"
+                   Opacity="0.7"/>
+      </StackPanel>
+      <TextBlock Grid.Row="6" Text="事件时间线" FontWeight="SemiBold" Margin="2,4,0,0"/>
+      <!-- 结构化时间线行(时刻|轨道|卡片)在代码里搭建;
+           行间零内边距让轨道连接竖线视觉上连续 -->
+      <ListView x:Name="TimelineList" Grid.Row="7" SelectionMode="None">
+        <ListView.ItemContainerStyle>
+          <Style TargetType="ListViewItem">
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Padding" Value="8,0,8,0"/>
+            <Setter Property="MinHeight" Value="0"/>
+          </Style>
+        </ListView.ItemContainerStyle>
+      </ListView>
+    </Grid>
+  </Grid>
+
+  <!-- 天球放大遮罩层(根 Grid 最后一个子元素=最上层;
+       ContentDialog 有 ~548px 内容上限会裁切大图, 故用页面内遮罩) -->
+  <Border x:Name="SkyOverlay" Grid.Row="0" Grid.RowSpan="5"
+          Visibility="Collapsed" Background="#D9101418" Margin="-4">
+    <Grid HorizontalAlignment="Center" VerticalAlignment="Center" RowSpacing="10">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+      <Grid Grid.Row="0" ColumnSpacing="12">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock x:Name="OvTitleText" Grid.Column="0" FontSize="16" FontWeight="SemiBold"
+                   Foreground="White" VerticalAlignment="Center"/>
+        <Button x:Name="OvCloseBtn" Grid.Column="1" Content="关闭"/>
+      </Grid>
+      <Grid x:Name="OvHolder" Grid.Row="1">
+        <!-- 双缓冲:新帧在背面 Image 解码完成(ImageOpened)后才翻面,
+             正面始终显示旧帧 —— 拖时刻条不会出现解码空窗闪烁 -->
+        <Image x:Name="OvImageA" Stretch="Uniform"
+               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Image x:Name="OvImageB" Stretch="Uniform" Opacity="0"
+               HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <Canvas x:Name="OvCanvas" Background="Transparent"/>
+      </Grid>
+      <Grid Grid.Row="2" ColumnSpacing="10">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <TextBlock Grid.Column="0" Text="时刻" Foreground="White"
+                   VerticalAlignment="Center" FontSize="13"/>
+        <Slider x:Name="OvSlider" Grid.Column="1" Minimum="0" Maximum="1440"
+                VerticalAlignment="Center"/>
+        <StackPanel Grid.Column="2" Orientation="Vertical" Spacing="0">
+          <TextBlock x:Name="OvTimeText" Foreground="White" FontSize="13"
+                     HorizontalAlignment="Right"/>
+          <TextBlock x:Name="OvCreditText" Foreground="#99FFFFFF" FontSize="10"
+                     HorizontalAlignment="Right"/>
+        </StackPanel>
+      </Grid>
+    </Grid>
+  </Border>
+</Grid>

@@ -1,0 +1,5 @@
+# 全仓库统一 LF:工作副本是 LF,若让 git 按 autocrlf 转成 CRLF,
+# 下次 checkout 会把整棵树变成 CRLF 并产生一次假的全量 diff。
+* text=auto eol=lf
+*.png binary
+*.jpg binary

@@ -1,0 +1,26 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+/.pytest_cache/
+
+# Virtual environments
+.venv
+
+# 离线设备镜像与本地缓存(几十 GB,不进版本控制)
+.tmp
+
+# IDE
+.idea/
+.vscode/
+
+# 打包送去别的机器的 zip
+*.zip
+
+# 伪语言词表:`scripts/i18n_pseudo.py` 生成的验收工具。
+# 它把每条译文包成 `⟦…⟧`,用来一眼看出界面上哪块文案漏了 `_()`。
+# 是工具不是资产,每次现生成。
+astro_smb/locale/xx_*/

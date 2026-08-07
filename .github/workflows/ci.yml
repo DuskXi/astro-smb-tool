@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-13 是 **Intel**,macos-14 是 arm64 —— 两个都要:
+        # 本项目的 macOS 目标是 x86_64,而只测 arm64 等于没测那条路。
+        os: [windows-latest, ubuntu-22.04, macos-13, macos-14]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+      # Qt 在 Linux 上要几个系统库,**装了 PySide6 也不够**:`import PySide6`
+      # 会成功(它只是个包),炸的是 `from PySide6.QtWidgets import …`。这份
+      # 清单是在 ubuntu:22.04 容器里一个一个试出来的(libGL → libxkbcommon →
+      # libfontconfig → libglib),不是抄来的。少一个的症状是**一千三百条测试
+      # 整块消失而报告全绿** —— tests/conftest.py 里那条守卫盯的就是这个。
+      - if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update -qq &&
+          sudo apt-get install -y -qq --no-install-recommends
+          libgl1 libegl1 libglib2.0-0 libxkbcommon0 libdbus-1-3 libfontconfig1
+      - if: runner.os == 'Windows'
+        run: uv sync --all-groups --extra winui
+      - if: runner.os != 'Windows'
+        run: uv sync --all-groups
+      # 三个平台跑同一条命令。非 Windows 上曾经硬编码过一份测试清单,
+      # 那是在 tests/conftest.py 有 pytest_ignore_collect 之前的权宜之计 ——
+      # 现在缺 win32more 会自动跳过 GUI 模块,清单只会漂移,不会帮忙。
+      - run: uv run pytest -q
+      - run: uv run python -m compileall -q astro_smb
+
+  # ── 这里曾经有两个 C# job ────────────────────────────────────────────
+  # `frontend`(建 Uno 渲染器的协议库)与 `renderer-build`(在 mac/linux 上
+  # 真编一次渲染器)。那套前端 2026-08-04 整体删除,而这两个 job 又活了
+  # 三天 —— 它们 checkout 之后去 `frontend/src/…` 找一个不存在的 csproj,
+  # **每一次推送都是红的**。
+  #
+  # 记在这儿是因为教训不在"忘了删":`.github/` 里的东西**没有任何测试
+  # 覆盖**,它引用的路径删掉时不会有人变红提醒你。真要防,得让 CI 自己
+  # 检查它引用的文件在不在 —— 见 tests/test_ci_workflows.py。
+
+  mac-scripts:
+    # `scripts/mac-*.sh` 是给用户的上手命令。它们**没在 mac 上跑过**,
+    # 至少保证语法与前置检查不炸(真正的 dotnet build 由上面那个 job 覆盖)。
+    name: macOS 上手脚本
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash -n scripts/mac-setup.sh && bash -n scripts/mac-run.sh
+      - run: test -x scripts/mac-setup.sh && test -x scripts/mac-run.sh
