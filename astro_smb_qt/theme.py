@@ -260,8 +260,61 @@ class Font:
     #: `FontIcon`(16px),跟正文同号会缩成一个看不清是什么的小点
     #: (独立验收量出来 Qt 约 7px、老 UI 约 16px)。
     ICON = 16
-    FAMILY = "Segoe UI, Microsoft YaHei UI, PingFang SC, Noto Sans CJK SC, sans-serif"
+    #: 各平台的 CJK 兜底。**排在系统界面字体后面** —— 中文字形在
+    #: `SF Pro` / `Cantarell` 这些拉丁字体里是没有的,得让它们接住。
+    CJK_FALLBACK = ("Microsoft YaHei UI", "PingFang SC", "Hiragino Sans GB",
+                    "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei")
     MONO = "Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"
+
+
+#: 各平台**公开的**界面字体名。`QFontDatabase` 在 mac 上给的是
+#: `.AppleSystemUIFont` —— 那是私有族名,QFont 认得,而 QSS 里按名字匹配
+#: 未必认。所以查到的那个排第一,后面再垫一个这台机器上**一定存在**的
+#: 公开名字:两条都不中的话又会触发那次全库扫描。
+_PLATFORM_UI = {
+    "darwin": ("SF Pro Text", "Helvetica Neue", "Lucida Grande"),
+    "win32": ("Segoe UI",),
+}
+_PLATFORM_UI_DEFAULT = ("Cantarell", "Ubuntu", "DejaVu Sans")
+
+
+def ui_family() -> str:
+    """界面字体族,**问 Qt 要当前系统的那个**,不写死。
+
+    原来第一顺位写死 `Segoe UI` —— 那是 Windows 的界面字体,mac 与 Linux 上
+    根本不存在。后果有两层,而且都不报错:
+
+    * **每次启动多花约 200 毫秒。** Qt 找不到就去遍历整个字体库建别名表,
+      x86 Mac 上实测 ``Populating font family aliases took 198 ms``,
+      而它自己在日志里就写着"换一个存在的字体来避免这个开销";
+    * **最终用的是哪个字体我们说了不算** —— 落到 Qt 的兜底上,而整套排版
+      尺寸(15/13/12/11 那几档)是照着一个具体字体调出来的。
+
+    **要在 QGuiApplication 建好之后调**,所以这里是函数不是常量,由
+    :func:`stylesheet` 现取。拿不到就退回平台默认名单 —— 那也比写死
+    另一个平台的名字强。
+    """
+    import sys as _sys
+
+    names: list[str] = []
+    try:
+        from PySide6.QtGui import QFontDatabase
+
+        sys_family = QFontDatabase.systemFont(
+            QFontDatabase.SystemFont.GeneralFont).family()
+    except (ImportError, AttributeError, RuntimeError):
+        # RuntimeError = 还没有 QGuiApplication。**只吞这三种** ——
+        # 早先这里是裸 `except Exception`,把"枚举名写错了"也一起吞了,
+        # 于是系统字体压根没进列表而一切看起来正常。
+        sys_family = ""
+    if sys_family:
+        names.append(sys_family)
+    names += [n for n in _PLATFORM_UI.get(_sys.platform, _PLATFORM_UI_DEFAULT)
+              if n not in names]
+    names += [f for f in Font.CJK_FALLBACK if f not in names]
+    names.append("sans-serif")
+    # QSS 里带空格的族名要引号,否则 `PingFang SC` 会被当成两个族
+    return ", ".join(f'"{n}"' if " " in n else n for n in names)
 
 
 #: 卡头左侧那道竖条的宽度(强调色)
@@ -457,7 +510,7 @@ def stylesheet() -> str:
     c = C
     return f"""
 * {{
-    font-family: {Font.FAMILY};
+    font-family: {ui_family()};
     font-size: {Font.BODY}px;
     outline: none;
 }}

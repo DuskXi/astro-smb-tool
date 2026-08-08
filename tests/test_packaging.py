@@ -186,3 +186,77 @@ class TestTheFrozenBundleSpec:
         assert "astro_smb_qt" in src, "规格没指向 Qt 入口"
         assert '"win32more"' in src, (
             "win32more 没被 exclude —— 它会把另一套前端的绑定拖进包里")
+
+    def test_mac_thins_the_universal_binaries(self):
+        """**mac 上不瘦身就白背一整套另一架构的代码。**
+
+        PySide6 的 mac 轮子是 universal2(一份文件里 x86_64 + arm64 都有)。
+        x86 Mac 上实测打出来 1023 MB,而同一套东西在 Linux(单架构轮子)
+        是 870 MB —— 差的那一百多兆是**永远不会被执行**的另一架构。
+
+        判据是"规格里按运行架构设了 `target_arch`",不是某个字面值 ——
+        arm64 机器上它得是 arm64。
+        """
+        src = self.SPEC.read_text(encoding="utf-8")
+        assert "target_arch=_TARGET_ARCH" in src, "没给 target_arch,胖二进制原样打进去"
+        assert "platform.machine()" in src, (
+            "target_arch 写死了某一个架构 —— 换台 mac 就打错了")
+
+
+class TestTheUiFontIsNotHardcodedToOnePlatform:
+    """`Segoe UI` 是 Windows 的界面字体。写死它的后果在别的平台上有两层,
+    **都不报错**:
+
+    * 每次启动多花约 200 毫秒 —— Qt 找不到就遍历整个字体库建别名表。
+      x86 Mac 上实测 ``Populating font family aliases took 198 ms``,
+      Qt 自己在日志里就写着"换一个存在的字体来避免这个开销";
+    * 最终用哪个字体我们说了不算,而整套排版尺寸是照着一个具体字体调的。
+    """
+
+    def test_the_family_list_is_computed_not_frozen(self):
+        import ast
+
+        src = (ROOT / "astro_smb_qt" / "theme.py").read_text(encoding="utf-8")
+        assert "def ui_family" in src
+        # 常量里不许再有它 —— 函数里作为**平台名单的一项**是可以的
+        for node in ast.walk(ast.parse(src)):
+            if (isinstance(node, ast.Assign) and len(node.targets) == 1
+                    and isinstance(node.targets[0], ast.Name)
+                    and node.targets[0].id == "FAMILY"):
+                raise AssertionError("FAMILY 又变回写死的常量了")
+
+    def test_each_platform_gets_a_font_that_exists_there(self, monkeypatch):
+        pytest.importorskip("PySide6")
+        import sys as _sys
+
+        from astro_smb_qt import theme
+
+        want = {"darwin": ("SF Pro Text", "Helvetica Neue"),
+                "win32": ("Segoe UI",),
+                "linux": ("Cantarell", "Ubuntu", "DejaVu Sans")}
+        for plat, expect in want.items():
+            monkeypatch.setattr(_sys, "platform", plat)
+            got = theme.ui_family()
+            assert any(e in got for e in expect), f"{plat}: {got}"
+
+    def test_cjk_fallbacks_are_always_there(self, monkeypatch):
+        """界面字体是拉丁字体时中文字形要有人接 —— 否则满屏方框。"""
+        pytest.importorskip("PySide6")
+        import sys as _sys
+
+        from astro_smb_qt import theme
+
+        for plat in ("darwin", "win32", "linux"):
+            monkeypatch.setattr(_sys, "platform", plat)
+            got = theme.ui_family()
+            assert "PingFang SC" in got and "Noto Sans CJK SC" in got, got
+
+    def test_families_with_spaces_are_quoted(self, monkeypatch):
+        """`PingFang SC` 不加引号会被 QSS 当成两个族名。"""
+        pytest.importorskip("PySide6")
+        import sys as _sys
+
+        from astro_smb_qt import theme
+
+        monkeypatch.setattr(_sys, "platform", "darwin")
+        assert '"PingFang SC"' in theme.ui_family()

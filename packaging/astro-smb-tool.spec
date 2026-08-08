@@ -29,10 +29,23 @@ PyInstaller 6 的 onedir 把随包数据放进 `_internal/`,而 `sys._MEIPASS` �
 `bundle_root()` / `install_root()` 分开两个函数就是为了这个;当年把两者当成
 一回事,打出来的包一启动就说"找不到资源",**只有真的运行一次才发现**。
 """
+import platform
 import sys
 from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files
+
+#: mac 上把 universal2 的胖二进制**瘦成本机这一个架构**。
+#:
+#: PySide6 的 mac 轮子是 universal2 —— 一份文件里同时装着 x86_64 与 arm64。
+#: 不瘦的话打出来的包里有一整套**永远不会被执行**的另一架构代码:x86 Mac
+#: 上实测 1023 MB,而同一套东西在 Linux(单架构轮子)是 870 MB。
+#:
+#: 给了 `target_arch`,PyInstaller 会对收集到的每个二进制走一遍 `lipo -thin`。
+#: 某个依赖缺目标架构时它会**当场报错**,不会悄悄打出一个跑不起来的包。
+_TARGET_ARCH = None
+if sys.platform == "darwin":
+    _TARGET_ARCH = "arm64" if platform.machine() == "arm64" else "x86_64"
 
 ROOT = Path(SPECPATH).parent          # noqa: F821 - SPECPATH 由 PyInstaller 注入
 
@@ -96,7 +109,7 @@ exe = EXE(                                                       # noqa: F821
     console=True,
     disable_windowed_traceback=False,
     argv_emulation=sys.platform == "darwin",   # mac 上双击/拖放传参
-    target_arch=None,          # 交叉架构见下面的说明
+    target_arch=_TARGET_ARCH,  # mac:瘦成本机架构,见文件头
     codesign_identity=None,
     entitlements_file=None,
 )
