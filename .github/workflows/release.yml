@@ -65,6 +65,10 @@ jobs:
 
       - if: runner.os == 'Windows'
         run: Compress-Archive dist/astro-smb-tool astro-smb-tool-${{ matrix.rid }}.zip
+      # **mac 这边保持 tar.gz,别换 .dmg / .zip。** Gatekeeper 只管带
+      # `com.apple.quarantine` 的文件,而那条属性是下载器打上去的;终端里
+      # `tar -xzf` 解出来的文件**不继承**它 —— 也就是没签名也不会被拦。
+      # 换成 .dmg 或让人在访达里双击解压,就把这条最省事的路堵死了。
       - if: runner.os != 'Windows'
         run: tar -czf astro-smb-tool-${{ matrix.rid }}.tar.gz -C dist astro-smb-tool
 

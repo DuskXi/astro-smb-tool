@@ -155,14 +155,27 @@ Intel 上打出来的是 **osx-x64**,Apple Silicon 上是 **osx-arm64** ——
 ./dist/astro-smb-tool/astro-smb-tool --host "/Volumes/ASIAIR"
 ```
 
-**包没有签名也没有公证。** 自己在本机打的、本机跑的不会被拦;一旦经过
-网络传输(AirDrop / 下载 / U 盘),Gatekeeper 会拦下来,需要:
+**包没有签名也没有公证。** 但这不等于"下下来就一定被拦" ——
+Gatekeeper 拦的是带 `com.apple.quarantine` 这条扩展属性的文件,而**那条
+属性是下载它的那个程序打上去的**,不是系统自动加在所有文件上的。
+
+于是分三种情况:
+
+| 怎么拿到的 | 会怎样 |
+|---|---|
+| 本机自己打的 | 什么都不会发生 |
+| `curl` / `wget` 下载,或终端里 `tar -xzf` 解开 | **也什么都不会发生** —— `tar` 不会把归档自己身上的隔离属性传给解出来的文件 |
+| 浏览器下载后在访达里双击解压 | 会被拦。解压出来的东西继承了隔离属性 |
+
+所以发布包用 `.tar.gz` 而不是 `.dmg`/`.zip` 是有意的:终端里解开就能直接跑。
+万一你是在访达里解的:
 
 ```bash
 xattr -dr com.apple.quarantine dist/astro-smb-tool
 ```
 
-签名与公证要 Apple 开发者账号,还没做,列在 README 的路线图里。
+签名与公证要 Apple 开发者账号(99 美元/年),还没做 —— 权衡写在
+[`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) §14。
 
 ---
 

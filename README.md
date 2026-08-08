@@ -120,7 +120,7 @@ export ASTRO_SMB_CATALOG_PATH="$PWD/tycho2_v1.bin"      # Windows: $env:...
 
 - **补齐翻译**：i18n 的机制与词表（1900 余条）已经就位，界面也能切换语言，
   但英文译文才刚起步。词汇表见 [`docs/i18n-glossary.md`](docs/i18n-glossary.md)。
-- **签名与公证**。三平台四架构的免安装包已经能打了(`.github/workflows/release.yml`,打 tag 触发),但**都没签名** —— macOS 上会被 Gatekeeper 拦下,Windows 上 SmartScreen 会警告。
+- **签名与公证**。三平台四架构的免安装包已经能打了(`.github/workflows/release.yml`,打 tag 触发),但**都没签名**。macOS 包发的是 `.tar.gz`,终端里解开不会被 Gatekeeper 拦(访达里解的话要 `xattr -dr com.apple.quarantine`);Windows 上 SmartScreen 会提示一次,点「仍要运行」即可。产物随附 SHA-256 与 GitHub 构建来源证明。
 - 尝试支持更多天文自动化工具的日志与目录结构，例如 **Astroberry** 等。
 - 继续完善设备适配、FITS 分析、板解算和导星质量诊断。
 
@@ -261,7 +261,7 @@ The catalog is large and should not be committed to the Git repository.
   entries) are in place and the UI can switch languages, but the English
   translation has barely started. Glossary:
   [`docs/i18n-glossary.md`](docs/i18n-glossary.md).
-- **Signing and notarization.** Standalone bundles for three platforms and four architectures already build (`.github/workflows/release.yml`, on tag), but **none are signed** — macOS Gatekeeper will block them and Windows SmartScreen will warn.
+- **Signing and notarization.** Standalone bundles for three platforms and four architectures already build (`.github/workflows/release.yml`, on tag), but **none are signed**. The macOS build ships as `.tar.gz`: extracting it in a terminal does not trip Gatekeeper (if you unpack it in Finder, run `xattr -dr com.apple.quarantine`). Windows SmartScreen warns once. Every artifact ships with a SHA-256 sum and a GitHub build provenance attestation.
 - Explore support for logs and directory layouts from additional astronomy
   automation tools, including **Astroberry** and others.
 - Continue improving device compatibility, FITS analysis, plate solving, and
