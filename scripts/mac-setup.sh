@@ -1,53 +1,42 @@
 #!/usr/bin/env bash
-# Intel macOS (x86_64) 上把环境备好。跑一次就够。
+# macOS 上把环境备好。跑一次就够。
 #
-# 只装依赖、只构建,不做签名也不打包 —— 目标是"能用命令跑起来"。
+#   ./scripts/mac-setup.sh
+#
+# 只装依赖、跑一遍测试。不签名、不打包 —— 打包见 scripts/package.py。
+#
+# **不需要 Xcode,不需要 .NET,不需要自己装 Python。** uv 会照
+# `.python-version` 自己拉 3.13。
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
-ROOT="$(pwd)"
 
 say() { printf '\033[1;36m==> %s\033[0m\n' "$*"; }
 die() { printf '\033[1;31m!! %s\033[0m\n' "$*" >&2; exit 1; }
 
-# ---------------------------------------------------------------- 前置检查
 say "检查前置工具"
-command -v uv >/dev/null 2>&1 || die "缺 uv。装:curl -LsSf https://astral.sh/uv/install.sh | sh"
-command -v dotnet >/dev/null 2>&1 || die "缺 dotnet。装 .NET SDK 9:https://dotnet.microsoft.com/download"
-
-DOTNET_MAJOR="$(dotnet --version | cut -d. -f1)"
-[ "$DOTNET_MAJOR" -ge 9 ] || die "需要 .NET SDK 9 或更新,当前 $(dotnet --version)"
+command -v uv >/dev/null 2>&1 || die \
+  "缺 uv。装:curl -LsSf https://astral.sh/uv/install.sh | sh(装完重开终端)"
 
 ARCH="$(uname -m)"
-say "架构 $ARCH · dotnet $(dotnet --version)"
-if [ "$ARCH" != "x86_64" ]; then
-  printf '\033[1;33m注意:这台不是 Intel。脚本照样能跑(RID 会用 osx-arm64),\n'
-  printf '     但本项目目前只在 x86_64 上验证过。\033[0m\n'
-fi
+case "$ARCH" in
+  x86_64) RID=osx-x64 ;;
+  arm64)  RID=osx-arm64 ;;
+  *)      die "不认识的架构 $ARCH" ;;
+esac
+say "架构 $ARCH → $RID · uv $(uv --version | awk '{print $2}')"
 
-# ---------------------------------------------------------------- Python 侧
-say "同步 Python 环境(uv sync)"
-# win32more 在 pyproject 里带着 sys_platform == 'win32' 标记,mac 上会被跳过。
-# 少了它 `astro_smb_gui`(老 WinUI 界面)import 不了 —— 那是预期的,
-# mac 上跑的是新的 Uno 前端,老 UI 本来就只在 Windows 服役。
-uv sync
+# `--extra qt` 装 PySide6(约 200 MB,第一次慢)。**它不在必装依赖里** ——
+# 只用命令行的人不该被拖去下这么多。dev 组里也有一份,所以裸 `uv sync`
+# 同样够用;这里写全是为了让这条命令单独看也说得通。
+say "同步 Python 环境(第一次要下 PySide6,约 200 MB)"
+uv sync --extra qt
 
-say "跑一遍不连设备的单测"
-uv run pytest tests/ -q -x --ignore=tests/test_legacy_ui_freeze.py
+# win32more 带着 `sys_platform == 'win32'` 标记,mac 上会被跳过 —— 那是
+# 预期的。少了它 `astro_smb_gui`(Windows 原生的那套界面)import 不了,
+# `tests/conftest.py` 会把相关模块整块跳过,而不是让整轮变红。
+say "跑一遍离线单测"
+uv run --extra qt pytest -q
 
-# ---------------------------------------------------------------- C# 侧
-say "还原并构建 Uno 渲染器"
-# Uno 的单项目模板要 workload;没装就装上(需要 sudo)。
-if ! dotnet workload list 2>/dev/null | grep -qi 'wasm-tools\|uno'; then
-  say "安装 Uno workload(需要 sudo)"
-  dotnet workload install wasm-tools || true
-fi
-
-# 先把不依赖 Uno 的协议库与它的测试跑通 —— 那一层出问题,前端一定也起不来
-dotnet test frontend/tests/AstroSmbTool.Protocol.Tests/AstroSmbTool.Protocol.Tests.csproj \
-  -v q --nologo
-
-dotnet build frontend/src/AstroSmbTool.Uno/AstroSmbTool.Uno/AstroSmbTool.Uno.csproj \
-  -v q --nologo
-
-say "完成。启动:  ./scripts/mac-run.sh   (或 ./scripts/mac-run.sh --host 192.0.2.227)"
+say "完成。启动:  ./scripts/mac-run.sh"
+say "打包:      uv run --extra qt python scripts/package.py --smoke   ($RID)"

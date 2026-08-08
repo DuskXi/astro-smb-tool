@@ -1,246 +1,210 @@
 # 在 macOS 上跑起来 —— 照着抄就行
 
-这一份只讲**一件事**:把 Qt 界面(`astro_smb_qt`)在 Mac 上跑起来。
-不需要 Xcode、不需要 .NET、不需要自己装 Python。
+从 GitHub 克隆下来,把 Qt 界面(`astro_smb_qt`)跑起来,再打一个免安装包。
 
-> 曾经还有第三套前端(Uno / C#,要 .NET SDK),**2026-08-03 已删除**。
-> 现在只有两套:Windows 原生的 WinUI3(`astro-smb-tool-gui`,mac 上跑不了),
-> 和这一份跨平台的 Qt。
+**不需要 Xcode、不需要 .NET、不需要自己装 Python。**
+Intel(x86_64)与 Apple Silicon(arm64)都适用,不同的地方会单独标出来。
+
+> Windows 原生的那套界面(`astro-smb-tool-gui`,WinUI 3)在 Mac 上跑不了 ——
+> 它依赖 `win32more`。那不是缺陷,是它本来就只在 Windows 服役;Mac 上跑的
+> 就是这一份 Qt。
 
 ---
 
 ## 一、装 uv(只做一次)
 
-打开「终端」(Terminal),粘这一行:
+打开「终端」,粘这一行:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-装完**关掉终端窗口再开一个**(让 PATH 生效)。验一下:
+装完**关掉终端窗口再开一个**(让 PATH 生效),验一下:
 
 ```bash
 uv --version
 ```
 
-有版本号就行。Python 不用管 —— `uv` 会照 `.python-version` 自己拉 3.13。
+有版本号就行。Python 不用管 —— uv 会照 `.python-version` 自己拉 3.13。
 
 ---
 
-## 二、进到项目目录
-
-把这个 zip 解压到任意位置,然后 `cd` 进去。**不确定路径就用这招**:
-在终端里敲 `cd ` (注意末尾有个空格),然后把解压出来的文件夹从访达拖进
-终端窗口,回车。
-
-验一下你在对的地方:
+## 二、克隆并进目录
 
 ```bash
-ls pyproject.toml
-```
-
-打印出 `pyproject.toml` 就对了。**下面所有命令都在这个目录里执行。**
-
----
-
-## 三、跑起来
-
-```bash
-uv run --with pyside6 astro-smb-tool-qt
-```
-
-第一次会下载依赖(PySide6 约 200 MB,几分钟),之后就快了。
-
-> 下面为了带参数方便,都写成 `python -m astro_smb_qt` —— 和上面这条**完全
-> 等价**,只是模块写法能直接跟调试参数。
-
-窗口起来之后,左边九个页面随便点。**没有连设备时大部分页面是空的**,
-这是对的 —— 下一步给它一份数据。
-
----
-
-## 四、给它一份数据(不用有 ASIAIR)
-
-这个工具能直接把**本地文件夹**当设备使(存储卡直插电脑也是走这条路)。
-**zip 里已经带了一份真机样例**,直接:
-
-```bash
-uv run --with pyside6 python -m astro_smb_qt --host "$PWD/.tmp/device/EMMC Images"
-```
-
-> **注意路径末尾是 `EMMC Images`,不是 `.tmp/device`。**
-> 传 `.tmp/device` 的话共享名会变成 `device`、日志目录落错地方,
-> 拍摄记录和导星两页会读不到东西(验收时踩过两次)。
->
-> `.tmp` 是**隐藏目录**,访达里默认看不见(`⌘⇧.` 可以切换显示)。
-> 命令照抄就行,不用去翻。
-
-### 这份样例里有什么、没有什么(**先看这段,免得误判**)
-
-真机镜像原本 **16 GB**(316 张 50 MB 的片子),整个塞进 zip 不现实。
-带上来的是:
-
-- **全部日志** —— Autorun 6 份 + PHD2 2 份。拍摄记录、导星分析、3D 天球、
-  夜次统计**全都建立在日志上**,所以这几页的数据是完整的、真的。
-- **全部 316 张缩略图**(`_thn.jpg`)—— 浏览页的目录结构、预览、时间线都真。
-- **一张真片**:`Plan/Light/M 8/Light_M 8_180.0s_…_0001.fit`(52 MB)。
-  影像查看、拉伸、直方图、板解算、星点叠加拿它演。
-
-因此有两处**看起来像 bug、其实是样例的限制**,别当问题报:
-
-1. **浏览页大部分目录里只有 `_thn.jpg`,看不到 `.fit`** —— 片子没带上来,
-   不是列表漏了。只有 `Plan/Light/M 8/` 下面有一张真的。
-2. **空间分析算出来的总量只有几 MB** —— 它量的是磁盘上真实占用,而磁盘上
-   现在确实只有缩略图。目录结构、嵌套 treemap、双向联动都是对的,
-   只有数字小。
-
-想要完整的量,把整个 `EMMC Images` 从设备或存储卡拷过来,把 `--host`
-指过去即可 —— 代码路径完全一样。
-
-### 板解算(可选,但很值得看)
-
-zip 里带了一份 **Tycho-2 星表**(`sample/catalog/`,35 MB),指过去就能用,
-省掉第一次从 CDS 取 159 MB 原始分片再构建的那几分钟:
-
-```bash
-export ASTRO_SMB_CATALOG_PATH="$PWD/sample/catalog/tycho2_v1.bin"
-uv run --with pyside6 python -m astro_smb_qt --host "$PWD/.tmp/device/EMMC Images"
-```
-
-**不指也行。** 不设这个变量的话,点「板解算」会先告诉你「星表未就绪」、
-要下多大、从哪儿取,再给一个「下载星表」按钮 —— 点了才下,下完自动接着
-把刚才那次解算跑完。(这条路在 2026-08-03 之前是**坏的**:核心库里进度
-回调的参数个数两边对不上,第一次回调就 `TypeError`,**任何前端都下不下来**。
-如果你手上这份 zip 是那天之前导出的,请用新的。)
-
-然后:影像查看页 → 打开那张 M 8 → 「板解算」。解出来之后「星点叠加」
-可勾,3D 天球页的「足迹」也才有东西可画(足迹**只用已经解算过的** WCS,
-不会自己去解算几十张 50 MB 的图)。
-
-存储卡直插的话,把路径换成卡的挂载点,例如:
-
-```bash
-uv run --with pyside6 python -m astro_smb_qt --host "/Volumes/ASIAIR"
-```
-
-真设备(同一个局域网):
-
-```bash
-uv run --with pyside6 python -m astro_smb_qt --host 192.0.2.227
+git clone https://github.com/DuskXi/astro-smb-tool.git
+cd astro-smb-tool
 ```
 
 ---
 
-## 五、常用参数
+## 三、一条命令备好环境
 
 ```bash
-# 直接开到某一页(browse/records/guiding/sky/fits/space/devices/scan/transfers)
-uv run --with pyside6 python -m astro_smb_qt --page records
-
-# 配色:白天 / 常规(深色)/ 红光(夜间不破坏暗适应)
-uv run --with pyside6 python -m astro_smb_qt --theme light
-
-# 浏览页直达某个目录、并选中第一张 .fit
-uv run --with pyside6 python -m astro_smb_qt --browse "EMMC Images/Plan/Light" --select fit
-
-# N 秒后自动关窗 + 退出前截一张图(自动化/截图用)
-uv run --with pyside6 python -m astro_smb_qt --seconds 30 --shot /tmp/shot.png
+./scripts/mac-setup.sh
 ```
 
-全部参数:`uv run --with pyside6 python -m astro_smb_qt --help`
+它做三件事:查 uv、`uv sync --extra qt`(第一次要下 PySide6,约 200 MB,
+几分钟)、跑一遍离线单测。
+
+**预期是全绿**,两千多条、半分钟跑完(默认 `-n auto` 并行)。会有几十条
+skip,那是正常的:`astro_smb_gui/` 在 Mac 上导不进来,`tests/conftest.py`
+整块跳过而不是让整轮变红;另有几条板解算的用例要真机 FITS 样本。
+
+不想用脚本就手敲:
+
+```bash
+uv sync --extra qt
+uv run --extra qt pytest -q
+```
+
+> **`--extra qt` 是什么。** PySide6 **故意不在必装依赖里** —— 只用命令行的人
+> 不该被拖去下两百多兆。代价是不加这个 extra 时图形入口跑不起来,
+> 那时它会自己告诉你该敲什么,不会甩一个 `ModuleNotFoundError` 给你。
 
 ---
 
-## 六、跑一遍测试(可选)
+## 四、跑起来
 
 ```bash
-uv run --with pyside6 pytest tests/ -q
+./scripts/mac-run.sh
 ```
 
-**预期是全绿**,两千多条,**跑完大约半分钟**(默认并行,`-n auto`)。
-有几条会 skip,那是正常的:`astro_smb_gui/`(老的 WinUI3 界面)在 Mac 上
-导不进来,`tests/conftest.py` 会跳过它们而不是让整轮变红。
+**不给设备地址时它会自动扫本网段找 ASIAIR** —— 不猜任何默认 IP。
+判据是 SMB 协商成功,不是 445 端口开着(有的路由器会对整个网段秒回 ACK,
+只看端口的话 254 个地址全都"在线")。
 
-> 别去掉并行。串行不只是慢:Qt 那批测试全在一个 QApplication 里建控件,
-> 越堆越多、后面越跑越慢,**总 CPU 比并行贵 4~5 倍**(Windows 上实测串行
-> 二十多分钟还没跑完)。
-
-上一节那份样例日志**同时也是测试数据** —— 有它在,`test_astrolog.py` 里
-几条"拿真机日志对账"的用例会真的跑起来,而不是 skip 掉。
-
-想省掉每次解析依赖的那几秒,可以先建一个常驻环境:
+指定设备:
 
 ```bash
-uv venv .venv-qt --python 3.13
-uv pip install --python .venv-qt/bin/python pyside6 pytest pytest-xdist -e .
-.venv-qt/bin/python -m pytest tests/ -q
+./scripts/mac-run.sh --host 192.0.2.227          # 局域网里的真设备
+./scripts/mac-run.sh --host "/Volumes/ASIAIR"    # 存储卡直插电脑
+```
+
+**本地目录是正式支持的设备类型**,不是测试设施 —— 走的是同一条代码路径。
+路径要给到含 `Autorun` / `log` 的那一层(通常叫 `EMMC Images`),给它的
+上一级会让共享名和日志目录都落错地方,拍摄记录与导星两页读不到东西。
+
+### 常用参数
+
+```bash
+./scripts/mac-run.sh --page records      # 直达某页:browse/records/guiding/sky/
+                                         #   fits/space/devices/scan/transfers
+./scripts/mac-run.sh --theme light       # 配色:light 白天 / normal 深色 / red 红光
+./scripts/mac-run.sh --seconds 30 --shot /tmp/shot.png    # 自动关窗 + 截图
+./scripts/mac-run.sh --help
+```
+
+### 没有设备也想看看界面
+
+造一个空目录当设备,九页都能打开(大部分是空态,那是对的):
+
+```bash
+mkdir -p /tmp/dev/"EMMC Images"/{log,Autorun}
+./scripts/mac-run.sh --host "/tmp/dev/EMMC Images"
+```
+
+要看真数据,把设备或存储卡上的 `EMMC Images` 整个拷过来,`--host` 指过去。
+**日志才是那几页的数据来源**(拍摄记录 / 导星 / 3D 天球 / 夜次统计),
+只拷 `log/` 也能看个七七八八。
+
+### 板解算的星表
+
+第一次点「板解算」如果没有星表,界面会告诉你要下多大、从哪儿取,给一个
+「下载星表」按钮 —— 点了它直接从上游 CDS I/259 取原始数据在本地构建
+(35.6 MB 成品),下完自动把刚才那次解算接着跑完。**不需要任何额外配置。**
+
+已经有一份现成的就指过去:
+
+```bash
+export ASTRO_SMB_CATALOG_PATH="$HOME/tycho2_v1.bin"
 ```
 
 ---
 
-## 七、出问题时
+## 五、打一个免安装包
+
+```bash
+uv run --extra qt python scripts/package.py --smoke
+```
+
+产物在 `dist/astro-smb-tool/`,目标机不用装 Python、不用装 Qt。
+Intel 上打出来的是 **osx-x64**,Apple Silicon 上是 **osx-arm64** ——
+**没有交叉编译这回事**:PyInstaller 把当前正在跑的那个解释器连同它的原生
+扩展一起塞进包里。两个架构要两台机器(CI 里就是 `macos-13` + `macos-14`)。
+
+`--smoke` 做两件事,缺一不可:
+
+1. **`--selftest`** —— 翻译词表、3D 天球的静态资产、QtWebEngine 找不找得到。
+   这三样**缺了都不影响启动**,只是界面永远中文、天球页空白 ——
+   打包坏掉的典型症状恰好都不报错;
+2. 真开一次窗口,几秒后自退。
+
+单独再跑自检:
+
+```bash
+./dist/astro-smb-tool/astro-smb-tool --selftest
+```
+
+### 关于 `.app` 与 Gatekeeper
+
+现在产出的是**一个文件夹加一个 Unix 可执行文件**,不是 `.app` ——
+双击会开终端。命令行启动是正常用法:
+
+```bash
+./dist/astro-smb-tool/astro-smb-tool --host "/Volumes/ASIAIR"
+```
+
+**包没有签名也没有公证。** 自己在本机打的、本机跑的不会被拦;一旦经过
+网络传输(AirDrop / 下载 / U 盘),Gatekeeper 会拦下来,需要:
+
+```bash
+xattr -dr com.apple.quarantine dist/astro-smb-tool
+```
+
+签名与公证要 Apple 开发者账号,还没做,列在 README 的路线图里。
+
+---
+
+## 六、出问题时
 
 | 症状 | 多半是 |
 |---|---|
 | `uv: command not found` | 第一步装完没重开终端 |
-| 窗口起不来、报 `qt.qpa.plugin` | 用的是远程/无桌面会话;要在本机图形界面下跑 |
-| 3D 天球页是「正射投影」不是 three.js | 装的是 `PySide6-Essentials`(不含 QtWebEngine)。`uv pip install pyside6-addons` 补上;不补也能用,只是降级成 QPainter 球 |
-| 拍摄记录 / 导星是空的 | `--host` 路径给到 `EMMC Images` 那一层了吗?见第四节 |
-| 界面是英文的 / 字体方块 | 不该发生,遇到请截图 —— 项目里所有用户可见文本都是中文 |
+| 图形入口说"需要 PySide6" | 少了 `--extra qt`。照它给的命令敲一遍就行 |
+| 窗口起不来、报 `qt.qpa.plugin` | 用的是 ssh / 无桌面会话;要在本机图形界面下跑 |
+| 拍摄记录 / 导星是空的 | `--host` 给到含 `log/` 的那一层了吗?见第四节 |
+| 3D 天球是黑的 | 显卡/驱动没给 WebGL。虚拟机与远程桌面里常见,实体 Mac 上不该发生 —— **遇到请报** |
+| 界面是英文 / 中文变方块 | 界面按系统语言选,左下角可手动切。方块是缺字体,请截图报 |
+
+`astro_smb_gui/`(Windows 那套)在 Mac 上导不进来是**预期的**,测试会自动
+跳过,不会让整轮变红。
 
 ---
 
-## 八、这一版里可以重点看的
+## 七、目录里有什么
 
-九页验收清单(`docs/qt-final.md`)已经走完。剩下几条要**真机/真网络**才算数
-(设备正在曝光的横幅、慢链路的下载进度条、在线设备的探测与连接、网里真有
-ASIAIR 时的 ★ 置顶)—— 那几条的**画面**已经用假数据喂出来截图验过了
-(`docs/evidence/qt/fake-*.png`,清单 §11),但**"真机上会不会触发"验不了**,
-所以它们写的是「画面已验 / 触发未验」而不是「过」。另有 1 条是有意偏离
-(边栏分组比另一套多了三个标题)。
-
-**你在 Mac 上如果手边有真设备,最值得帮我验的就是那几条。**
-
-**这一版(8-04 下午)新修的**,都是"不报错、只是悄悄不对"那一类:
-
-- **拍摄记录里帧型的顺序**(「已完成 · dark 5/5 · bias 30/30」)**每次启动都不一样** ——
-  底下用的是集合并,而 Python 字符串 hash 每进程随机。现在按日志里出现的顺序。
-- **导星仪表盘有一组会直接报错**(`UnboundLocalError`)—— 一句
-  `h_ra, _ = np.histogram(...)` 把 gettext 的 `_` 遮成了局部名。真机 11 组里
-  只有第 10 组走到那条路径,所以整轮单测是绿的。
-- **极轴误差那个数字可不可信**,原来是去结论文本里搜「恰定」两个字判断的。
-- 传输页组头的「完成 N / 失败 N」比的是中文字面量而不是状态常量。
-- **测试快了 50 倍**(23 分钟没跑完 → 半分钟跑完,见第六节)。
-
-上一版(8-04 上午)修的:
-
-- **板解算**:12 行结构化结果(含「离先验中心 20.7′」—— FITS 头里的 RA/DEC
-  是赤道仪编码器读数,与解算中心恒差约 21′,那不是故障)、258 颗星点叠加。
-  之前这一页会**永久冻在「正在解算…」**。
-- **星表**:新机器上点板解算会先说清楚(未就绪 / 要下多大 / 从哪儿取)
-  再给下载按钮。**这条路在 8-03 之前是坏的** —— 核心库里进度回调参数个数
-  两边对不上,任何前端都下不下来。
-- **传输页「排队」分区**:之前**永远是空的**(判据比的是 `"排队"`,而常量
-  是 `"排队中"`)。
-- **高度角量条**:四个刻度换成天文线稿图标(地平线 / 低空浑浊 / 通透 / 天顶),
-  已越过的点亮、没到的留灰 —— 填充停在哪个图标之前,本身就是结论。
-- **3D 天球**:选中目标现在球上有高亮环(之前只有相机飞过去,标记一点没变);
-  「足迹」画出真实视场四边形。
-- **心跳**:连上就跳第一拍(之前头 4 秒状态栏一直写「断开」)。
+```
+astro_smb/          核心库(SMB / FITS / 天文 / 日志 / 板解算),不依赖任何界面
+astro_smb_app/      共享应用层(设备记录、缓存、传输队列、视图模型)
+astro_smb_qt/       Qt 界面 ← Mac 上跑的就是这一份
+astro_smb_gui/      WinUI 3 界面(只在 Windows 上能跑),它是界面**原型**
+packaging/          PyInstaller 规格
+tests/              两千多条离线单测(默认并行,半分钟跑完)
+docs/DEVELOPMENT.md 技术总览:分层、线程模型、真机上踩过的坑
+docs/qt-final.md    逐页验收清单 = 「完工」的定义
+```
 
 ---
 
-## 九、目录里有什么
+## 八、手边有真设备的话,最值得帮忙验的
 
-```
-astro_smb/        核心库(SMB / FITS / 天文 / 日志 / 板解算),不依赖任何界面
-astro_smb_app/    共享应用层(设备记录、缓存、传输队列、视图模型)
-astro_smb_qt/     Qt 界面 ← 就是这一份
-astro_smb_gui/    WinUI3 界面(**只在 Windows 上能跑**)—— 它是界面**原型**,
-                  Qt 这套照它逐页复刻;两边同步是单向的
-tests/            两千多条离线单测(默认并行,半分钟跑完)
-docs/qt-final.md  逐页验收清单 = 「完工」的定义
-```
+验收清单里有 5 条写的是「**画面已验 / 触发未验**」—— 界面拿到那种状态时
+画得对(假数据喂出来截过图),但**真机上会不会触发**只有连上设备才算数:
 
-Mac 上 `astro_smb_gui/` 跑不了(它依赖 `win32more`),这是预期的 ——
-`tests/conftest.py` 会自动跳过那些用例,不会让整轮测试变红。
+- 设备正在曝光时的顶部横幅;
+- 慢链路下的下载进度条;
+- 在线设备的探测与连接;
+- 网里真有 ASIAIR 时扫描结果的 ★ 置顶。
+
+这四条在 Mac 上验一遍最有价值。

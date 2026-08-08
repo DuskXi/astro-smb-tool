@@ -346,8 +346,14 @@ def test_no_automation_still_builds_the_deleted_uno_frontend():
     删代码时 import 会红、测试会红,只有这两个地方不会:CI 配置和它调的
     脚本都没人替它们变红。所以这条盯的是**残留的构建动作**,不是文件名。
     """
+    # **`.sh` 也要扫。** 第一版只扫了 `.yml` 和 `.py`,于是
+    # `scripts/mac-setup.sh` 与 `mac-run.sh` 又活了三天:前者要 .NET SDK 9、
+    # 建一个不存在的 csproj,后者 exec 一个早就没有的入口点
+    # (`astro-smb-tool-ui`)。而 CI 里那个 mac job 只做 `bash -n` 语法检查,
+    # **语法当然是对的** —— 它一路绿着,直到有人真在 Mac 上照着跑。
     watch = [*(ROOT / ".github" / "workflows").glob("*.yml"),
-             *(ROOT / "scripts").glob("*.py")]
+             *(ROOT / "scripts").glob("*.py"),
+             *(ROOT / "scripts").glob("*.sh")]
     assert watch, "没有可扫的自动化文件,这条门禁在空转"
 
     dead = ("dotnet ", "AstroSmbTool.Uno", "AstroSmbTool.Protocol",

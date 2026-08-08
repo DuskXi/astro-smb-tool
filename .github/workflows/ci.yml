@@ -55,11 +55,25 @@ jobs:
   # 检查它引用的文件在不在 —— 见 tests/test_ci_workflows.py。
 
   mac-scripts:
-    # `scripts/mac-*.sh` 是给用户的上手命令。它们**没在 mac 上跑过**,
-    # 至少保证语法与前置检查不炸(真正的 dotnet build 由上面那个 job 覆盖)。
+    # `scripts/mac-*.sh` 是**给用户的第一条命令**,得真的跑一遍。
+    #
+    # 这个 job 原来只做 `bash -n`(语法检查)+ 可执行位。于是那两个脚本在
+    # Uno 被删之后**又活了三天**:setup 要 .NET SDK 9、建一个不存在的
+    # csproj,run 去 exec 一个早就没有的入口点 —— 而**语法当然是对的**,
+    # 这一路全绿,直到有人真在 Mac 上照着敲。
+    #
+    # 跟上面 python 那个 job 在 macos-13 上有重叠,是有意的:那边验的是
+    # "代码在 mac 上过不过",这边验的是"文档里那条命令能不能用"。
     name: macOS 上手脚本
     runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
-      - run: bash -n scripts/mac-setup.sh && bash -n scripts/mac-run.sh
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
       - run: test -x scripts/mac-setup.sh && test -x scripts/mac-run.sh
+      - run: ./scripts/mac-setup.sh
+      # 启动脚本没法在 CI 上真开窗口,至少证明它把参数透下去了、
+      # 而且指向的是一个**存在**的入口点(原来那个已经没了)。
+      - run: ./scripts/mac-run.sh --help
