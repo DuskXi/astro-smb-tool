@@ -791,4 +791,58 @@ ASTRO_SMB_LANG=xx_PS uv run --with pyside6 python -m astro_smb_qt
   (.part 原子落盘 + 重试不再退化 resume)。
 - 单测全绿(数量见 `uv run pytest tests/ -q`)。
 
+## 14. 打包与发布
+
+三平台四架构的免安装包:`packaging/astro-smb-tool.spec`(PyInstaller onedir)+
+`scripts/package.py`,CI 在 `.github/workflows/release.yml`(打 tag 或手动触发)。
+打的是 **Qt 那一套**;WinUI3 要 Windows App Runtime 单独装,不是解开就能跑的东西。
+
+```bash
+uv run --extra qt python scripts/package.py --smoke
+```
+
+### 没有交叉编译这回事
+
+PyInstaller 把**当前正在跑的那个解释器**连同它已装好的原生扩展一起塞进包里。
+所以四个产物 = 四台原生机器:`windows-latest` / `ubuntu-22.04` / `macos-13`(Intel)/
+`macos-14`(Apple Silicon)。
+
+想用一个 universal2 单包代替两台 mac 也不行:链路上**每一个**原生轮子都得是
+universal2,而 numpy / pillow / cffi 都只发分架构的轮子(2026-08 查过 PyPI)。
+PySide6 自己倒是 universal2。
+
+### `--smoke` 做两件事,缺一不可
+
+1. **`--selftest`** —— 随包资源找不找得到:翻译词表、天球静态资产、QtWebEngine。
+   这三样**缺了都不影响启动**:界面永远中文、天球页空白 —— 也就是说打包坏掉的
+   典型症状恰好都不报错。从包外面查不了(包里没有能随便跑 python 的入口),
+   所以这条自检必须长在程序里。
+2. **真开一次窗口**,几秒后自退。自检过了窗口起不来,也还是坏的。
+
+### 三个只有真跑一遍才会发现的坑
+
+- **Windows:打包后 `PYTHONIOENCODING` 不生效。** PyInstaller 的引导按机器的
+  ANSI 代码页写 stdout(中文机器是 GBK)。重定向到文件或被 CI 抓走时,中文在
+  英文 Windows 上**直接变成一串问号** —— 丢字,不是显示错,而丢的正是报错信息。
+  现在非 tty 时钉成 UTF-8(`_utf8_when_redirected`),真控制台不碰。
+- **Linux:以 root 跑时 QtWebEngine 直接把进程带走。** Chromium 的 zygote 检查到
+  uid 0 会 `LOG(FATAL)`,不是抛异常。而九个页面是开机就建的(天球页里有
+  `QWebEngineView`),所以这不是"天球页打不开",是**整个程序退出码 1**。
+  WSL / docker / CI 默认就是 root。现在只在 root 下加 `--no-sandbox`。
+- **Linux 包不是完全自足的。** Qt 的系统级依赖(`libGL` / `libEGL` / `libglib` /
+  `libxkbcommon` / `libfontconfig`,加上 QtWebEngine 要的 `libnss3` 一组)得由目标机
+  提供。清单在 `release.yml` 那一步 apt 里,是在 `ubuntu:22.04` 容器里一个一个
+  试出来的 —— 少一个的表现是启动就 `ImportError: libXXX.so.N`。
+
+### WSLg 上天球画不出来(不是 bug)
+
+WSLg 里 Chromium 的 GPU 通道拿不到纹理,天球的 WebGL 画布是**黑的**,日志刷
+`Compositor returned null texture`。试过六种后端:`--use-gl=swiftshader` 直接
+core dump,`--enable-unsafe-swiftshader` 与 `--use-angle=swiftshader` 仍然黑,
+只有 `--disable-gpu` 能让页面**印出那句 WebGL 失败的提示**(黑屏变成人话)。
+
+**别据此自动关 GPU** —— 有显卡的 Linux 桌面上那条路是好的,关掉等于把能用的
+功能砍了。这条记在这里,是为了下次有人在虚拟机/远程桌面上看到黑框时,
+知道那是环境不是代码。界面其余八页在 WSLg 下完全正常(实测截图)。
+
 > 记住:这个项目的价值一半在功能,一半在**趟过的坑**(§7)。改动前先确认你没有在重新踩已经解决的雷。

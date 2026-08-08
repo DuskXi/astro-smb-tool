@@ -16,7 +16,56 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
+
+
+def _utf8_when_redirected() -> None:
+    """输出被重定向时钉成 UTF-8。**交互式控制台不碰。**
+
+    打包后的 exe 走 PyInstaller 的引导,**`PYTHONIOENCODING` 不生效**;实测
+    Windows 上它按机器的 ANSI 代码页写(这台是 GBK)。重定向到文件或被 CI
+    抓走时:中文在中文 Windows 上只是"编码不对",在**英文 Windows 上直接
+    变成一串问号** —— 那是丢字,不是显示错,而丢的正是报错信息。
+
+    真控制台那一支不动:Python 对着控制台走宽字符 API,本来就是对的,
+    强行改 encoding 反而可能把对的改坏。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        if stream is None or not hasattr(stream, "reconfigure"):
+            continue
+        try:
+            if not stream.isatty():
+                stream.reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError):          # 流已关闭 / 不支持
+            pass
+
+
+def _chromium_cannot_sandbox_as_root() -> None:
+    """以 root 跑时给 QtWebEngine 关掉沙箱。**只在 root 下,只在 Linux 上。**
+
+    Chromium 的 zygote 检查到 uid 0 会直接 `LOG(FATAL)` —— 不是抛异常,是
+    **把整个进程带走**,Python 这边一个字都拦不住。而九个页面是开机就建的
+    (天球页里有 `QWebEngineView`),所以这不是"天球页打不开",是
+    **整个程序起不来,退出码 1,只留一行 Chromium 的英文日志**。
+
+    WSL / docker / CI 默认就是 root,实测打好的 Linux 包在里面就是这个下场。
+    普通桌面用户不是 root,沙箱照常开着 —— 这一支碰不到他们。
+
+    必须在 QtWebEngine 初始化**之前**设,所以放在模块级。
+    """
+    if not sys.platform.startswith("linux"):
+        return
+    if getattr(os, "geteuid", None) is None or os.geteuid() != 0:
+        return
+    flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+    if "--no-sandbox" not in flags:
+        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (
+            f"{flags} --no-sandbox".strip())
+
+
+_utf8_when_redirected()
+_chromium_cannot_sandbox_as_root()
 
 
 def _require_toolkit() -> None:
@@ -65,6 +114,9 @@ def build_parser() -> argparse.ArgumentParser:
                     help=_("启动页"))
     ap.add_argument("--theme", default=theme.MODE_NORMAL, choices=list(theme.MODES),
                     help=_("配色:normal 常规 / red 红光(夜间不破坏暗适应)"))
+    ap.add_argument(
+        "--selftest", action="store_true",
+        help=_("检查随包资源找不找得到(打完包必跑),不开界面"))
     ap.add_argument("--seconds", type=float, default=0.0,
                     help=_("N 秒后自动关窗 —— 截图脚本必须给它,不然每跑一次就泄漏一个进程"))
     ap.add_argument("--browse", default="",
@@ -79,11 +131,68 @@ def build_parser() -> argparse.ArgumentParser:
     return ap
 
 
+def _selftest() -> int:
+    """检查**随包资源**在这台机器上真的找得到。
+
+    只查那些"用路径打开、不是 import 进来"的东西 —— 它们缺了都不会让程序
+    起不来,只会让某一页空白、或者界面永远是中文。也就是说:**打包坏了的
+    典型症状,恰好都不报错。**
+
+    每一条都打印查到的实际路径,不只是打勾 —— 排查时要的是"它去哪儿找了"。
+    """
+    import sys as _sys
+
+    from astro_smb import i18n
+
+    rows: list[tuple[bool, str, str]] = []
+
+    langs = [x for x in i18n.available_languages() if x != i18n.SOURCE_LANGUAGE]
+    rows.append((bool(langs), "翻译词表", f"{len(langs)} 种: {langs}"))
+
+    # 真翻一句 —— 词表文件在不代表 gettext 找得到它(目录层级差一层就静默
+    # 回退到原文)。用一条**一定有译文**的:界面语言名。
+    if "en" in langs:
+        got = i18n.gettext_in("en", "语言")
+        rows.append((got != "语言", "英文能翻出来", f"语言 -> {got!r}"))
+
+    from astro_smb_app.views import sky3d
+
+    web = sky3d.PKG_WEB_DIR
+    need = {"sky3d.js", "sky3d.css", "sky3d.html"}
+    have = {p.name for p in web.iterdir()} if web.is_dir() else set()
+    rows.append((need <= have, "天球静态资产", f"{web} -> {sorted(have)}"))
+
+    from astro_smb_qt import webhost
+
+    ok, why = webhost.available()
+    rows.append((ok, "QtWebEngine", why or "可用"))
+
+    from astro_smb_app import bundle
+
+    rows.append((True, "运行方式",
+                 f"frozen={bundle.frozen()} root={bundle.bundle_root()}"))
+
+    bad = 0
+    for good, name, detail in rows:
+        if not good:
+            bad += 1
+        print(f"  {'ok ' if good else 'FAIL'}  {name:16} {detail}")
+    if bad:
+        print(f"\n{bad} 项不通过 —— 这个包缺东西,而它照样起得来。",
+              file=_sys.stderr)
+    else:
+        print("\n自检通过:随包资源都找得到。")
+    return 1 if bad else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
         format="%(levelname)s %(name)s: %(message)s")
+
+    if args.selftest:
+        return _selftest()
 
     from PySide6.QtWidgets import QApplication
 
@@ -176,8 +285,9 @@ def _arm_auto(win, page: str) -> None:
 def _arm_autoclose(app, win, seconds: float, shot: str) -> None:
     """定时自关(+ 可选截图)。
 
-    **探针脚本必须自带超时自关。** 这个仓库真机踩过:一个没有自关的天球探针,
-    代理迭代验证时每 3 分钟泄漏一个进程,几轮就吃掉几个 GB。
+    **带界面的脚本必须自带超时自关。** 真机踩过:一个没有自关的天球探针,
+    反复跑验证时每 3 分钟泄漏一个进程,几轮就吃掉几个 GB —— 而它还拖着
+    一整棵 WebView2 子进程树。
     """
     from PySide6.QtCore import QTimer
 

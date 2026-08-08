@@ -149,3 +149,40 @@ class TestEveryGuiEntryPointCanGetItsToolkit:
             msg = str(e.value)
             assert extra in msg, f"没告诉用户装哪个 extra: {msg[:120]}"
             assert "pip install" in msg, f"没给可以照抄的命令: {msg[:120]}"
+
+
+class TestTheFrozenBundleSpec:
+    """**PyInstaller 规格里写死的路径也会漂。**
+
+    规格是构建时才读的:里面某个目录改了名,一直到打包那一刻才炸,而打包
+    只在打 tag 时跑。和 `.github/` 一样,是这个仓库里没人替它变红的地方。
+    """
+
+    SPEC = ROOT / "packaging" / "astro-smb-tool.spec"
+
+    def test_the_spec_exists(self):
+        assert self.SPEC.is_file(), (
+            "release.yml 要打这份规格,它不在 —— 整条发布链是断的")
+
+    def test_the_data_directories_it_bundles_are_real(self):
+        """规格里点名要打进去的那几样东西,源码树里得真有。
+
+        少一样的表现不是构建失败,是**打出来的包缺一块功能而照样启动** ——
+        翻译没了界面永远中文,天球资产没了那一页空白。
+        """
+        src = self.SPEC.read_text(encoding="utf-8")
+        want = {
+            "astro_smb_app/web": ROOT / "astro_smb_app" / "web",
+            "astro_smb/locale": ROOT / "astro_smb" / "locale",
+        }
+        for name, path in want.items():
+            assert name in src, f"规格里没提 {name} —— 它不会被打进包"
+            assert path.is_dir(), f"规格要打 {name},而它不在源码树里"
+
+    def test_it_targets_the_qt_frontend(self):
+        """打的是跨平台那一套。**WinUI3 打不了** —— 它要 Windows App
+        Runtime 单独安装,不是解开就能跑的东西。"""
+        src = self.SPEC.read_text(encoding="utf-8")
+        assert "astro_smb_qt" in src, "规格没指向 Qt 入口"
+        assert '"win32more"' in src, (
+            "win32more 没被 exclude —— 它会把另一套前端的绑定拖进包里")

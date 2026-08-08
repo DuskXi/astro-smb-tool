@@ -1,0 +1,71 @@
+name: Release
+
+# 三平台四架构的可分发包(**不签名**)。手动触发或打 tag 时跑。
+# 产物是 zip / tar.gz,解开就能跑 —— 目标机不用装 Python,也不用装 Qt。
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: ${{ matrix.rid }}
+    strategy:
+      # 一个平台挂了别把其余三个也掐掉 —— 分平台的问题要一次全看到,
+      # 而不是修一个跑一轮。
+      fail-fast: false
+      matrix:
+        include:
+          - { os: windows-latest, rid: win-x64 }
+          - { os: ubuntu-22.04,   rid: linux-x64 }
+          # **mac 两个架构各用一台原生机器,不是交叉编译。**
+          # PyInstaller 把**当前正在跑的解释器**连同它的原生扩展一起打进去,
+          # 没有交叉这回事。想用一个 universal2 单包代替两台机器也不行:
+          # 链路上每个原生轮子都得是 universal2,而 numpy / pillow / cffi
+          # 都只发分架构的轮子(2026-08 查过 PyPI)。PySide6 自己倒是。
+          - { os: macos-13,       rid: osx-x64 }      # Intel
+          - { os: macos-14,       rid: osx-arm64 }    # Apple Silicon
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      # Qt 在 Linux 上要几个系统库,**装了 PySide6 也不够**:`import PySide6`
+      # 会成功(它只是个包),炸的是 `from PySide6.QtWidgets import …`。
+      # 这份清单是在 ubuntu:22.04 容器里一个一个试出来的。
+      # 后面那几个 `libnss3`/`libxcomposite1`/… 是 QtWebEngine 的(天球页)。
+      - if: runner.os == 'Linux'
+        run: >-
+          sudo apt-get update -qq &&
+          sudo apt-get install -y -qq --no-install-recommends
+          libgl1 libegl1 libglib2.0-0 libxkbcommon0 libdbus-1-3 libfontconfig1
+          libnss3 libxcomposite1 libxdamage1 libxrandr2 libxtst6 libasound2
+          libxkbcommon-x11-0 libxcb-cursor0 libxcb-icccm4 libxcb-image0
+          libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 libxcb-shape0
+          libxcb-xkb1
+
+      - run: uv sync --extra qt --group dev
+
+      # `--smoke` 会做两件事,缺一不可:
+      #   1. `--selftest` —— 随包资源(翻译 / 天球资产 / WebEngine)找不找得到。
+      #      少了它们**程序照样起得来**,只是界面永远中文、天球页空白。
+      #   2. 真开一次窗口,几秒后自退。
+      # 无头 runner 上第 2 步靠 `QT_QPA_PLATFORM=offscreen`(package.py 自己判)。
+      - run: uv run --extra qt python scripts/package.py --smoke
+
+      - if: runner.os == 'Windows'
+        run: Compress-Archive dist/astro-smb-tool astro-smb-tool-${{ matrix.rid }}.zip
+      - if: runner.os != 'Windows'
+        run: tar -czf astro-smb-tool-${{ matrix.rid }}.tar.gz -C dist astro-smb-tool
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: astro-smb-tool-${{ matrix.rid }}
+          path: astro-smb-tool-${{ matrix.rid }}.*
+          if-no-files-found: error
