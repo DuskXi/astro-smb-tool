@@ -218,7 +218,54 @@ class Shell(QMainWindow):
             row.addWidget(b)
         self.nav.status.addLayout(row)
         self._sync_mode_buttons()
+        self._build_downloads_entry()
         self._build_language_picker()
+
+    def _build_downloads_entry(self) -> None:
+        """「联网下载」入口。**放边栏底部,不进九页的导航。**
+
+        它管的是本机缓存,不是设备上的东西 —— 混进那九页里会让"这一列是
+        看设备的"这条规律破掉。角标写"已就绪 N/M",这样不点开也知道差不差
+        东西:野外发现星表没备,就太晚了。
+        """
+        from astro_smb_app.views import downloads as DL
+
+        self.nav.status.addWidget(W.group_title(_("资源")))
+        got, total = DL.summary()
+        self.downloads_btn = W.button(
+            _("联网下载 {got}/{total}").format(got=got, total=total),
+            on_click=self.open_downloads)
+        self.nav.status.addWidget(self.downloads_btn)
+
+    def open_downloads(self) -> None:
+        """打开(或前置)下载管理窗口。
+
+        **同一个实例,不是每次点都新开一个。** 开三个窗口各自下同一样东西
+        会撞同一个 `.part` 文件。
+        """
+        from astro_smb_qt.downloads import DownloadsWindow
+
+        win = getattr(self, "_downloads_win", None)
+        if win is None:
+            win = DownloadsWindow(self)
+            self._downloads_win = win
+            win.destroyed.connect(
+                lambda *_a: setattr(self, "_downloads_win", None))
+        win.refresh()
+        win.show()
+        win.raise_()
+        win.activateWindow()
+
+    def refresh_downloads_badge(self) -> None:
+        """下载完一样之后把边栏那个角标刷一下。"""
+        from astro_smb_app.views import downloads as DL
+
+        btn = getattr(self, "downloads_btn", None)
+        if btn is None:
+            return
+        got, total = DL.summary()
+        btn.setText(_("联网下载 {got}/{total}").format(got=got, total=total))
+
 
     #: 语言代码 → 给人看的名字。**用各语言自己的写法**(endonym):
     #: 一个只会英文的用户在中文界面里要找的是 "English",不是"英语"。

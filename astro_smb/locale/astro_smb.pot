@@ -16,7 +16,7 @@ msgstr ""
 msgid "\n(已落至地平线以下)"
 msgstr ""
 
-#: astro_smb_app/preview.py:546
+#: astro_smb_app/preview.py:553
 msgid "\n… (仅显示前 400 行 / {0})"
 msgstr ""
 
@@ -64,11 +64,11 @@ msgstr ""
 msgid "  —  下方列表为历史记录;本次会话的日志将在拍摄结束后生成, 届时会提示刷新"
 msgstr ""
 
-#: astro_smb/catalog_build.py:340
+#: astro_smb/catalog_build.py:391
 msgid "  解析 [{i}/{n}] 累计 {tot:,} 条"
 msgstr ""
 
-#: astro_smb/catalog_build.py:333
+#: astro_smb/catalog_build.py:384
 msgid " (已缓存)"
 msgstr ""
 
@@ -200,11 +200,11 @@ msgstr ""
 msgid " · 跳过 {sk}"
 msgstr ""
 
-#: astro_smb_qt/shell.py:848
+#: astro_smb_qt/shell.py:895
 msgid " — {0} 个共享"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:795
+#: astro_smb_gui/_browser.py:813
 msgid " — 仅显示前 {RENDER_CAP} 项(共 {0}),可用搜索过滤"
 msgstr ""
 
@@ -328,7 +328,7 @@ msgstr ""
 msgid "(含 SIP,只取线性部分)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1939
+#: astro_smb_gui/_browser.py:1957
 msgid "(含 {ndir} 个目录,将递归删除)"
 msgstr ""
 
@@ -388,7 +388,7 @@ msgstr ""
 msgid "(未命名)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:293 astro_smb_gui/browser.xaml
+#: astro_smb_gui/_browser.py:300 astro_smb_gui/browser.xaml
 msgid "(未打开共享)"
 msgstr ""
 
@@ -400,7 +400,7 @@ msgstr ""
 msgid "(未检测到 Microsoft Edge WebView2 Runtime,请到微软官网安装「Evergreen 独立安装程序」后重试)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1072 astro_smb_gui/browser.xaml
+#: astro_smb_gui/_browser.py:1090 astro_smb_gui/browser.xaml
 msgid "(未选中)"
 msgstr ""
 
@@ -444,7 +444,7 @@ msgstr ""
 msgid "(超像素去马赛克)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1874
+#: astro_smb_gui/_browser.py:1892
 msgid "(达到 {RENDER_CAP} 上限)"
 msgstr ""
 
@@ -556,6 +556,14 @@ msgstr ""
 msgid "3D 天球不可用:{msg}\n(拍摄记录页的 2D 天球图不受影响)"
 msgstr ""
 
+#: astro_smb_app/views/downloads.py:84
+msgid "3D 天球的渲染库。没有它天球页退化成 QPainter 画的正射投影 —— 能看,但不能转。"
+msgstr ""
+
+#: astro_smb_app/views/downloads.py:74
+msgid "3D 天球的背景。没有它天球还是能转,只是背后是纯黑,看不出目标落在银河的哪一段。"
+msgstr ""
+
 #: astro_smb_qt/pages/sky3d.py:441
 msgid "3D 天球装载失败: {exc} —— 退回正射球"
 msgstr ""
@@ -588,7 +596,7 @@ msgstr ""
 msgid "ASIAIR 卡"
 msgstr ""
 
-#: astro_smb_app/preview.py:361
+#: astro_smb_app/preview.py:368
 msgid "ASIAIR 缩略图 (_thn.jpg)"
 msgstr ""
 
@@ -604,7 +612,7 @@ msgstr ""
 msgid "ASTRO_SMB_GUI_FITSVIEW 无法打开: {ex}"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:29
+#: astro_smb_qt/__main__.py:110
 msgid "Astro SMB Tool — PySide6 界面"
 msgstr ""
 
@@ -618,6 +626,10 @@ msgstr ""
 
 #: astro_smb_app/views/fitsview.py:154 astro_smb_gui/_fitsview.py:1537
 msgid "Bayer 相位"
+msgstr ""
+
+#: astro_smb_app/views/downloads.py:67
+msgid "CDS / VizieR I/259 —— 星表的权威发布方,无再分发顾虑"
 msgstr ""
 
 #: astro_smb_gui/webhost.py:437
@@ -636,19 +648,23 @@ msgstr ""
 msgid "DEC 漂移偏大,建议检查极轴"
 msgstr ""
 
-#: astro_smb_app/preview.py:371
+#: astro_smb_app/views/downloads.py:77
+msgid "ESO/S. Brunier — GigaGalaxy Zoom (CC BY 4.0)"
+msgstr ""
+
+#: astro_smb_app/preview.py:378
 msgid "FITS 全图预览(RGB 立方体 + STF 拉伸)"
 msgstr ""
 
-#: astro_smb_app/preview.py:372
+#: astro_smb_app/preview.py:379
 msgid "FITS 全图预览(单色 + STF 拉伸)"
 msgstr ""
 
-#: astro_smb_app/preview.py:373
+#: astro_smb_app/preview.py:380
 msgid "FITS 全图预览(灰度百分位拉伸)"
 msgstr ""
 
-#: astro_smb_app/preview.py:370
+#: astro_smb_app/preview.py:377
 msgid "FITS 全图预览(超像素去马赛克 + STF 拉伸)"
 msgstr ""
 
@@ -684,7 +700,7 @@ msgstr ""
 msgid "FITS 查看器:路径为空"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1042 astro_smb_gui/_browser.py:1053
+#: astro_smb_gui/_browser.py:1060 astro_smb_gui/_browser.py:1071
 msgid "FITS 查看器尚未接入(shell 缺少 open_fitsview)"
 msgstr ""
 
@@ -716,7 +732,7 @@ msgstr ""
 msgid "N 张都盖到的部分占并集"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:37
+#: astro_smb_qt/__main__.py:121
 msgid "N 秒后自动关窗 —— 截图脚本必须给它,不然每跑一次就泄漏一个进程"
 msgstr ""
 
@@ -804,7 +820,7 @@ msgstr ""
 msgid "SMB 地址(192.0.2.227)或本地文件夹(E:\\ 、D:\\ASIAIR)"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:31
+#: astro_smb_qt/__main__.py:112
 msgid "SMB 地址(192.0.2.227)或本地目录(D:\\ASIAIR)"
 msgstr ""
 
@@ -856,6 +872,10 @@ msgstr ""
 msgid "StarList.shape 非法"
 msgstr ""
 
+#: astro_smb_app/views/downloads.py:63
+msgid "Tycho-2 星表"
+msgstr ""
+
 #: astro_smb/catalog_build.py:126
 msgid "Tycho-2 记录行尾不是换行符 — 定长假设不成立"
 msgstr ""
@@ -864,7 +884,7 @@ msgstr ""
 msgid "Tycho-2 记录长度不符: {0} 不是 {TYC2_LINE_BYTES} 的整数倍 — 数据可能被截断或不是 tyc2.dat"
 msgstr ""
 
-#: astro_smb/catalog_build.py:285
+#: astro_smb/catalog_build.py:336
 msgid "V 星等    : {0:.3f} ~ {1:.3f}   中位 {2:.2f}"
 msgstr ""
 
@@ -976,15 +996,15 @@ msgstr ""
 msgid "curl 下载底图失败: {0}"
 msgstr ""
 
-#: astro_smb/catalog.py:1008
+#: astro_smb/catalog.py:1039
 msgid "curl 下载星表失败: {0}"
 msgstr ""
 
-#: astro_smb/catalog.py:984
+#: astro_smb/catalog.py:1015
 msgid "curl 下载星表失败: {ex}"
 msgstr ""
 
-#: astro_smb/catalog_build.py:283
+#: astro_smb/catalog_build.py:334
 msgid "dec 升序  : {0}   范围 {1:+.4f} ~ {2:+.4f}"
 msgstr ""
 
@@ -1060,6 +1080,14 @@ msgstr ""
 msgid "subtract 的每条必须是 (时刻, dRA, dDEC)"
 msgstr ""
 
+#: astro_smb_app/views/downloads.py:83
+msgid "three.js"
+msgstr ""
+
+#: astro_smb_app/views/downloads.py:87
+msgid "three.js r160 (MIT)"
+msgstr ""
+
 #: astro_smb_app/views/sky3d.py:251 astro_smb_gui/webhost.py:252
 msgid "three.js 下载内容不像 JS 模块,已丢弃"
 msgstr ""
@@ -1100,7 +1128,7 @@ msgstr ""
 msgid "{0:.0f} 平方角分"
 msgstr ""
 
-#: astro_smb_qt/shell.py:866
+#: astro_smb_qt/shell.py:913
 msgid "{0:.0f} 秒前落盘"
 msgstr ""
 
@@ -1148,15 +1176,19 @@ msgstr ""
 msgid "{0}  {name}   {1} 个文件 · 完成 {done}"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:477 astro_smb_gui/_browser.py:1289
+#: astro_smb_app/views/browser.py:477 astro_smb_gui/_browser.py:1307
 msgid "{0} ({size:,} 字节)"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:110
+msgid "{0} / {1}"
 msgstr ""
 
 #: astro_smb_qt/pages/browser.py:298
 msgid "{0} / {1} 已用 {pct:.0f}% · 空闲 {2}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:489
+#: astro_smb_gui/_browser.py:507
 msgid "{0} / {1} 已用 {percent:.0f}% · 空闲 {2}"
 msgstr ""
 
@@ -1184,7 +1216,7 @@ msgstr ""
 msgid "{0} 个导星日志 · {n_sec} 个导星段 · {n_cal} 次校准"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:792
+#: astro_smb_gui/_browser.py:810
 msgid "{0} 个文件 ({1}), {ndir} 个目录"
 msgstr ""
 
@@ -1332,7 +1364,7 @@ msgstr ""
 msgid "{active} 个进行中"
 msgstr ""
 
-#: astro_smb_qt/shell.py:756
+#: astro_smb_qt/shell.py:803
 msgid "{active} 个进行中 · {queued} 个排队 · {0}/s"
 msgstr ""
 
@@ -1352,7 +1384,7 @@ msgstr ""
 msgid "{begins:%m-%d %H:%M:%S} · 校准 · {result}"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:253
+#: astro_smb_qt/pages/space.py:262
 msgid "{blocks} 个块"
 msgstr ""
 
@@ -1388,6 +1420,10 @@ msgstr ""
 msgid "{gaps} 处"
 msgstr ""
 
+#: astro_smb_qt/downloads.py:161
+msgid "{got} / {total} 已就绪。缺哪一样都不会让软件用不了 —— 只是对应的那块功能降级。"
+msgstr ""
+
 #: astro_smb/guidecheck.py:576
 msgid "{head},信噪 {snr:.0f} —— 极轴误差的直接观测量;调用方没给画幅尺寸,无法换算成角落像素"
 msgstr ""
@@ -1396,7 +1432,7 @@ msgstr ""
 msgid "{head},画幅角落被推了 {corner_px:.1f} 像素 —— 这是极轴误差的直接观测量,与导星好坏无关"
 msgstr ""
 
-#: astro_smb_qt/shell.py:631
+#: astro_smb_qt/shell.py:678
 msgid "{host}\n● 在线 {rtt:.0f} ms"
 msgstr ""
 
@@ -1432,7 +1468,7 @@ msgstr ""
 msgid "{n_dev} 台已记录设备,枚举到 {0} 个未加入的本机磁盘(列出 {n_vol} 个)  ·  用时 {ms:.0f} ms"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:252
+#: astro_smb_qt/pages/space.py:261
 msgid "{n_files} 文件"
 msgstr ""
 
@@ -1464,7 +1500,7 @@ msgstr ""
 msgid "{name}  ·  断线"
 msgstr ""
 
-#: astro_smb/catalog_build.py:250
+#: astro_smb/catalog_build.py:299
 msgid "{name} 下载后 gzip 校验失败 — 疑似被截断"
 msgstr ""
 
@@ -1472,11 +1508,11 @@ msgstr ""
 msgid "{name} 已复制到剪贴板 —— 到资源管理器里 Ctrl+V"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1916
+#: astro_smb_gui/_browser.py:1934
 msgid "{name} 改为:"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:364
+#: astro_smb_qt/pages/space.py:373
 msgid "{name} 是文件,没有下级可看"
 msgstr ""
 
@@ -1496,11 +1532,11 @@ msgstr ""
 msgid "{ndir} 夹 {nfile} 文件"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:884
+#: astro_smb_gui/_browser.py:902
 msgid "{ndir} 目录"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:882
+#: astro_smb_gui/_browser.py:900
 msgid "{ndir}目录/{nfile}文件"
 msgstr ""
 
@@ -1516,7 +1552,7 @@ msgstr ""
 msgid "{nfile} 个文件({0}) · {ndir} 个目录"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:886
+#: astro_smb_gui/_browser.py:904
 msgid "{nfile} 文件"
 msgstr ""
 
@@ -1588,7 +1624,7 @@ msgstr ""
 msgid "{t0} – {t1}  ·  拖动时刻滑杆看目标在天上怎么走;点目标行或天球标记可飞过去"
 msgstr ""
 
-#: astro_smb_qt/shell.py:376
+#: astro_smb_qt/shell.py:423
 msgid "{tag} 页初始化失败,详情见日志"
 msgstr ""
 
@@ -1624,7 +1660,7 @@ msgstr ""
 msgid "… 超过 {_MAX_ROWS} 行已截断(下钻可查看更深内容)"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:591 astro_smb_qt/pages/browser.py:369 astro_smb_gui/_browser.py:700
+#: astro_smb_app/views/browser.py:591 astro_smb_qt/pages/browser.py:369 astro_smb_gui/_browser.py:718
 msgid "… 项"
 msgstr ""
 
@@ -1636,15 +1672,15 @@ msgstr ""
 msgid "↓ {group} ({completed}/{total} 文件)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:586
+#: astro_smb_gui/_browser.py:604
 msgid "▣ 本地索引 · 已核对"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:598
+#: astro_smb_gui/_browser.py:616
 msgid "▣ 本地索引 · 未能核对({brief})"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:522
+#: astro_smb_gui/_browser.py:540
 msgid "▣ 本地索引({0}) · 核对中…"
 msgstr ""
 
@@ -1668,7 +1704,7 @@ msgstr ""
 msgid "○ = 该目录在左侧图中没有对应色块(太小或超出块预算)。\n这一行仍然可点:点击即下钻,把它当作新的视图根看清内部。"
 msgstr ""
 
-#: astro_smb_qt/shell.py:853
+#: astro_smb_qt/shell.py:900
 msgid "○ 断开"
 msgstr ""
 
@@ -1680,7 +1716,7 @@ msgstr ""
 msgid "○ 未检测"
 msgstr ""
 
-#: astro_smb_qt/shell.py:852
+#: astro_smb_qt/shell.py:899
 msgid "○ 端口可达(未握手)"
 msgstr ""
 
@@ -1700,7 +1736,7 @@ msgstr ""
 msgid "● 在线 {rtt:.0f} ms"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:592
+#: astro_smb_gui/_browser.py:610
 msgid "● 已同步设备最新内容(新增 {added} · 消失 {removed} · 变化 {changed})"
 msgstr ""
 
@@ -1728,7 +1764,7 @@ msgstr ""
 msgid "★ 是疑似 ASIAIR(共享里有 Images)"
 msgstr ""
 
-#: astro_smb/guidecheck.py:1001 astro_smb_app/views/scan.py:69 astro_smb_gui/_browser.py:1936  (+5)
+#: astro_smb/guidecheck.py:1001 astro_smb_app/views/scan.py:69 astro_smb_gui/_browser.py:1954  (+5)
 msgid "、"
 msgstr ""
 
@@ -1768,7 +1804,7 @@ msgstr ""
 msgid "上传 {share}/{rel} 失败: {e}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1704
+#: astro_smb_gui/_browser.py:1722
 msgid "上传到 {share}/{0}"
 msgstr ""
 
@@ -1824,20 +1860,24 @@ msgstr ""
 msgid "下调"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:914 astro_smb_qt/pages/browser.py:661 astro_smb_gui/_browser.py:434  (+1)
+#: astro_smb_qt/downloads.py:76 astro_smb_qt/downloads.py:120 astro_smb_qt/downloads.py:97  (+4)
 msgid "下载"
 msgstr ""
 
-#: astro_smb/catalog_build.py:329
+#: astro_smb/catalog_build.py:380
 msgid "下载 Tycho-2 原始分片 → {raw_dir}"
 msgstr ""
 
-#: astro_smb/catalog_build.py:243
+#: astro_smb/catalog_build.py:292
 msgid "下载 {name} 失败: {0}"
 msgstr ""
 
-#: astro_smb/catalog_build.py:240
+#: astro_smb/catalog_build.py:289
 msgid "下载 {name} 失败: {ex}"
+msgstr ""
+
+#: astro_smb/catalog_build.py:284
+msgid "下载 {name} 失败: 超时"
 msgstr ""
 
 #: astro_smb/client.py:942
@@ -1872,7 +1912,7 @@ msgstr ""
 msgid "下载与上传队列 · 文件间并发 × 文件内分块并发"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:915 astro_smb_gui/_browser.py:435
+#: astro_smb_qt/pages/browser.py:915 astro_smb_gui/_browser.py:442
 msgid "下载到…"
 msgstr ""
 
@@ -1910,6 +1950,10 @@ msgstr ""
 
 #: astro_smb_qt/pages/fitsview.py:489 astro_smb_gui/fitsview.xaml astro_smb_gui/sky3d.xaml
 msgid "下载星表"
+msgstr ""
+
+#: astro_smb_app/views/downloads.py:68
+msgid "下载约 159 MB,构建后本机占 35.6 MB"
 msgstr ""
 
 #: astro_smb_gui/browser.xaml
@@ -2056,10 +2100,6 @@ msgstr ""
 msgid "中心区域的拟合残差,不代表全幅畸变"
 msgstr ""
 
-#: astro_smb/parallel.py:244
-msgid "中断"
-msgstr ""
-
 #: astro_smb_gui/_guidedash.py:1795
 msgid "主峰 ~{0:.0f}s(r={1:.2f})"
 msgstr ""
@@ -2160,7 +2200,7 @@ msgstr ""
 msgid "传输"
 msgstr ""
 
-#: astro_smb_qt/shell.py:317 astro_smb_gui/main.xaml
+#: astro_smb_qt/shell.py:364 astro_smb_gui/main.xaml
 msgid "传输队列"
 msgstr ""
 
@@ -2180,7 +2220,7 @@ msgstr ""
 msgid "位深"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:491 astro_smb_gui/_browser.py:1304
+#: astro_smb_app/views/browser.py:491 astro_smb_gui/_browser.py:1322
 msgid "位置"
 msgstr ""
 
@@ -2204,7 +2244,7 @@ msgstr ""
 msgid "保存 PNG 失败: {ex}"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:482 astro_smb_gui/_browser.py:1294
+#: astro_smb_app/views/browser.py:482 astro_smb_gui/_browser.py:1312
 msgid "修改"
 msgstr ""
 
@@ -2280,7 +2320,7 @@ msgstr ""
 msgid "停在这里的时候还没探完,不能说明网段里没有设备 —— 重新扫一次看看。"
 msgstr ""
 
-#: astro_smb_app/views/records.py:116 astro_smb_qt/pages/browser.py:175 astro_smb_qt/pages/scan.py:130  (+4)
+#: astro_smb_app/views/records.py:116 astro_smb_qt/downloads.py:103 astro_smb_qt/pages/browser.py:175  (+5)
 msgid "停止"
 msgstr ""
 
@@ -2316,7 +2356,7 @@ msgstr ""
 msgid "元数据"
 msgstr ""
 
-#: astro_smb/catalog_build.py:298
+#: astro_smb/catalog_build.py:349
 msgid "先从 CDS 下载 20 个分片(约 159 MB)到 --raw-dir"
 msgstr ""
 
@@ -2328,7 +2368,7 @@ msgstr ""
 msgid "先连接设备"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:157
+#: astro_smb_qt/pages/space.py:166
 msgid "先连接设备并选一个共享"
 msgstr ""
 
@@ -2336,19 +2376,19 @@ msgstr ""
 msgid "先选一个目标"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1050
+#: astro_smb_gui/_browser.py:1068
 msgid "先选中一个 FITS 文件(.fit/.fits/.fts)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1410
+#: astro_smb_gui/_browser.py:1428
 msgid "先选中单个文件查看详情"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1612
+#: astro_smb_gui/_browser.py:1630
 msgid "先选中文件/目录"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1590 astro_smb_gui/_browser.py:1599
+#: astro_smb_gui/_browser.py:1608 astro_smb_gui/_browser.py:1617
 msgid "先选中要下载的文件/目录"
 msgstr ""
 
@@ -2392,7 +2432,7 @@ msgstr ""
 msgid "全段"
 msgstr ""
 
-#: astro_smb_qt/pages/transfers.py:96 astro_smb_qt/shell.py:328 astro_smb_gui/main.xaml  (+1)
+#: astro_smb_qt/pages/transfers.py:96 astro_smb_qt/shell.py:375 astro_smb_gui/main.xaml  (+1)
 msgid "全部取消"
 msgstr ""
 
@@ -2416,7 +2456,7 @@ msgstr ""
 msgid "公共交集"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:249
+#: astro_smb_qt/pages/space.py:258
 msgid "共 {0}"
 msgstr ""
 
@@ -2424,7 +2464,7 @@ msgstr ""
 msgid "共 {0} 个文件 ({1}), {ndir} 个目录"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1937
+#: astro_smb_gui/_browser.py:1955
 msgid "共 {0} 项"
 msgstr ""
 
@@ -2496,7 +2536,7 @@ msgstr ""
 msgid "内部缺口"
 msgstr ""
 
-#: astro_smb/catalog_build.py:305
+#: astro_smb/catalog_build.py:356
 msgid "写入文件头的来源短名"
 msgstr ""
 
@@ -2536,11 +2576,11 @@ msgstr ""
 msgid "分段对比(条长 = 时长 · 颜色 = 该段 RMS · 点击定位到主曲线)"
 msgstr ""
 
-#: astro_smb_qt/shell.py:279
+#: astro_smb_qt/shell.py:326
 msgid "切换到 {name}?"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:41
+#: astro_smb_qt/__main__.py:125
 msgid "列完目录自动选中:整数=第 N 行,`fit`=第一张 .fit"
 msgstr ""
 
@@ -2576,7 +2616,7 @@ msgstr ""
 msgid "刚刚采集"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:483 astro_smb_qt/pages/browser.py:1015 astro_smb_gui/_browser.py:1295
+#: astro_smb_app/views/browser.py:483 astro_smb_qt/pages/browser.py:1015 astro_smb_gui/_browser.py:1313
 msgid "创建"
 msgstr ""
 
@@ -2608,6 +2648,10 @@ msgstr ""
 msgid "初拟合失败: {ex}"
 msgstr ""
 
+#: astro_smb_qt/downloads.py:217
+msgid "删不掉 —— 文件可能正被占用"
+msgstr ""
+
 #: astro_smb/mirror.py:244 astro_smb/mirror.py:247 astro_smb_qt/pages/browser.py:919  (+6)
 msgid "删除"
 msgstr ""
@@ -2632,8 +2676,12 @@ msgstr ""
 msgid "删除 {share}/{rel} 失败: 路径不存在"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1964
+#: astro_smb_gui/_browser.py:1982
 msgid "删除时出错: {0}"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:73
+msgid "删除本地副本"
 msgstr ""
 
 #: astro_smb/client.py:1197
@@ -2684,7 +2732,7 @@ msgstr ""
 msgid "刷新"
 msgstr ""
 
-#: astro_smb_qt/shell.py:736
+#: astro_smb_qt/shell.py:783
 msgid "刷新传输队列失败"
 msgstr ""
 
@@ -2708,7 +2756,7 @@ msgstr ""
 msgid "剩 {0}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:787
+#: astro_smb_gui/_browser.py:805
 msgid "加载中 {end}/{0} …"
 msgstr ""
 
@@ -2848,7 +2896,7 @@ msgstr ""
 msgid "卡已拔出或路径不存在,插回后点「刷新」"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1941
+#: astro_smb_gui/_browser.py:1959
 msgid "即将永久删除以下内容,不可恢复:\n\n{names}\n\n{detail}"
 msgstr ""
 
@@ -2860,23 +2908,23 @@ msgstr ""
 msgid "卷标"
 msgstr ""
 
-#: astro_smb/catalog_build.py:281
+#: astro_smb/catalog_build.py:332
 msgid "历元      : J{epoch:.1f}   生成于 {0}"
 msgstr ""
 
-#: astro_smb_app/preview.py:367
+#: astro_smb_app/preview.py:374
 msgid "原图 {0},点击按钮生成拉伸预览"
 msgstr ""
 
-#: astro_smb_app/preview.py:507
+#: astro_smb_app/preview.py:514
 msgid "原图缩略"
 msgstr ""
 
-#: astro_smb/catalog_build.py:296
+#: astro_smb/catalog_build.py:347
 msgid "原始 tyc2.dat 分片所在目录(或单个文件)"
 msgstr ""
 
-#: astro_smb/catalog_build.py:300
+#: astro_smb/catalog_build.py:351
 msgid "原始分片存放目录(配合 --download,默认 <out目录>/tyc2raw)"
 msgstr ""
 
@@ -2916,7 +2964,7 @@ msgstr ""
 msgid "反解出的极轴误差 {total_arcmin:.0f}′ 超出可信范围"
 msgstr ""
 
-#: astro_smb_qt/shell.py:685
+#: astro_smb_qt/shell.py:732
 msgid "发现 {0} 份新日志,拍摄记录/导星分析下次刷新会重新解析"
 msgstr ""
 
@@ -2984,7 +3032,7 @@ msgstr ""
 msgid "另有 {0} 段未列出(按时间取前 {SEG_MAX_ROWS} 段)"
 msgstr ""
 
-#: astro_smb/catalog_build.py:304
+#: astro_smb/catalog_build.py:355
 msgid "只保留 V ≤ 该值的星(构建亮星子集)"
 msgstr ""
 
@@ -2992,7 +3040,7 @@ msgstr ""
 msgid "只关掉,不重开"
 msgstr ""
 
-#: astro_smb/catalog_build.py:306
+#: astro_smb/catalog_build.py:357
 msgid "只打印已构建文件的统计"
 msgstr ""
 
@@ -3116,7 +3164,7 @@ msgstr ""
 msgid "含失败与已取消"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:33
+#: astro_smb_qt/__main__.py:114
 msgid "启动页"
 msgstr ""
 
@@ -3144,7 +3192,7 @@ msgstr ""
 msgid "图上星点太少"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:258
+#: astro_smb_qt/pages/space.py:267
 msgid "图中已省略 {omitted} 个小块(下钻可看清)"
 msgstr ""
 
@@ -3164,15 +3212,15 @@ msgstr ""
 msgid "图幅尺寸必须是整数"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1458
+#: astro_smb_gui/_browser.py:1476
 msgid "图片加载失败: {ex}"
 msgstr ""
 
-#: astro_smb_app/preview.py:489
+#: astro_smb_app/preview.py:496
 msgid "图片超过 {0},不自动预览"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:385 astro_smb_gui/_browser.py:433
+#: astro_smb_gui/_browser.py:392 astro_smb_gui/_browser.py:440
 msgid "在 FITS 查看器中打开"
 msgstr ""
 
@@ -3260,7 +3308,7 @@ msgstr ""
 msgid "处理页面消息失败: {ex}"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:921 astro_smb_gui/_browser.py:439
+#: astro_smb_qt/pages/browser.py:921 astro_smb_gui/_browser.py:446
 msgid "复制 UNC 路径"
 msgstr ""
 
@@ -3272,7 +3320,7 @@ msgstr ""
 msgid "复制全部信息"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1627
+#: astro_smb_gui/_browser.py:1645
 msgid "复制准备失败: {0}"
 msgstr ""
 
@@ -3280,15 +3328,15 @@ msgstr ""
 msgid "复制到剪贴板"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:916 astro_smb_gui/_browser.py:436
+#: astro_smb_qt/pages/browser.py:916 astro_smb_gui/_browser.py:443
 msgid "复制到剪贴板(可粘贴到资源管理器)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1646
+#: astro_smb_gui/_browser.py:1664
 msgid "复制到剪贴板失败: {ex}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1422 astro_smb_gui/_fitsview.py:1346
+#: astro_smb_gui/_browser.py:1440 astro_smb_gui/_fitsview.py:1346
 msgid "复制详情失败: {ex}"
 msgstr ""
 
@@ -3312,7 +3360,7 @@ msgstr ""
 msgid "夜次"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:477 astro_smb_gui/_browser.py:1289
+#: astro_smb_app/views/browser.py:477 astro_smb_gui/_browser.py:1307
 msgid "大小"
 msgstr ""
 
@@ -3376,8 +3424,12 @@ msgstr ""
 msgid "失败(星丢失×{star_lost})"
 msgstr ""
 
-#: astro_smb_qt/shell.py:765
+#: astro_smb_qt/shell.py:812
 msgid "失败/取消 {failed} 个"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:191
+msgid "失败:{exc}"
 msgstr ""
 
 #: astro_smb_gui/_sky3d.py:2570
@@ -3388,7 +3440,7 @@ msgstr ""
 msgid "如 \"EMMC Images/Autorun\""
 msgstr ""
 
-#: astro_smb_gui/_browser.py:866
+#: astro_smb_gui/_browser.py:884
 msgid "子项计数出错: {ex!r}"
 msgstr ""
 
@@ -3416,7 +3468,7 @@ msgstr ""
 msgid "完成,共上传 {total_files} 个文件"
 msgstr ""
 
-#: astro_smb/catalog_build.py:341
+#: astro_smb/catalog_build.py:392
 msgid "完成: {count:,} 条, {out} ({0:.1f} MB, {1:.1f}s)"
 msgstr ""
 
@@ -3668,7 +3720,7 @@ msgstr ""
 msgid "尚未采集本机磁盘与设备状态 — 点「刷新」"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:480 astro_smb_gui/_browser.py:1292
+#: astro_smb_app/views/browser.py:480 astro_smb_gui/_browser.py:1310
 msgid "尺寸"
 msgstr ""
 
@@ -3676,7 +3728,7 @@ msgstr ""
 msgid "居中"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1557
+#: astro_smb_gui/_browser.py:1575
 msgid "展开 {name}: 已入队 {count} 个文件…"
 msgstr ""
 
@@ -3684,15 +3736,15 @@ msgstr ""
 msgid "展开文件夹"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1570
+#: astro_smb_gui/_browser.py:1588
 msgid "展开目录 {name} 失败: {ex}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1573
+#: astro_smb_gui/_browser.py:1591
 msgid "展开目录失败: {ex}"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:484 astro_smb_gui/_browser.py:1296
+#: astro_smb_app/views/browser.py:484 astro_smb_gui/_browser.py:1314
 msgid "属性"
 msgstr ""
 
@@ -3728,7 +3780,7 @@ msgstr ""
 msgid "峰值误差"
 msgstr ""
 
-#: astro_smb_qt/pages/records.py:131 astro_smb_gui/records.xaml
+#: astro_smb_app/views/downloads.py:73 astro_smb_qt/pages/records.py:131 astro_smb_gui/records.xaml
 msgid "巡天底图"
 msgstr ""
 
@@ -3760,7 +3812,7 @@ msgstr ""
 msgid "已下载: {target} ({0}) [{n_chunks} 块 / {workers} 并发]"
 msgstr ""
 
-#: astro_smb/catalog_build.py:348
+#: astro_smb/catalog_build.py:399
 msgid "已中断"
 msgstr ""
 
@@ -3776,7 +3828,7 @@ msgstr ""
 msgid "已保存拉伸后的 PNG: {out}"
 msgstr ""
 
-#: astro_smb_qt/pages/scan.py:168
+#: astro_smb_qt/downloads.py:189 astro_smb_qt/pages/scan.py:168
 msgid "已停止"
 msgstr ""
 
@@ -3796,7 +3848,7 @@ msgstr ""
 msgid "已创建: {share}/{0}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1966
+#: astro_smb_gui/_browser.py:1984
 msgid "已删除 {0} 项"
 msgstr ""
 
@@ -3804,27 +3856,27 @@ msgstr ""
 msgid "已删除: {display_path}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1667
+#: astro_smb_gui/_browser.py:1685
 msgid "已加入 {0} 个文件上传"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1593
+#: astro_smb_gui/_browser.py:1611
 msgid "已加入 {0} 项下载 → {download_dir}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1605
+#: astro_smb_gui/_browser.py:1623
 msgid "已加入 {0} 项下载 → {folder}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1733
+#: astro_smb_gui/_browser.py:1751
 msgid "已加入 {n} 项上传 → {share}/{0}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1500
+#: astro_smb_gui/_browser.py:1518
 msgid "已加入下载: {name} → {download_dir}"
 msgstr ""
 
-#: astro_smb/backend.py:1002 astro_smb/backend.py:1116 astro_smb/catalog.py:892  (+9)
+#: astro_smb/backend.py:1002 astro_smb/backend.py:1116 astro_smb/catalog.py:909  (+10)
 msgid "已取消"
 msgstr ""
 
@@ -3840,11 +3892,11 @@ msgstr ""
 msgid "已复制"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1980
+#: astro_smb_gui/_browser.py:1998
 msgid "已复制 {0} 条路径"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1644
+#: astro_smb_gui/_browser.py:1662
 msgid "已复制 {0} 项到剪贴板 — 到资源管理器按 Ctrl+V 粘贴"
 msgstr ""
 
@@ -3852,7 +3904,7 @@ msgstr ""
 msgid "已复制详情({0} 行)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1420
+#: astro_smb_gui/_browser.py:1438
 msgid "已复制详情({0} 行)到剪贴板"
 msgstr ""
 
@@ -3864,11 +3916,15 @@ msgstr ""
 msgid "已完成 / 已结束"
 msgstr ""
 
-#: astro_smb_qt/shell.py:763
+#: astro_smb_qt/shell.py:810
 msgid "已完成 {done} 个"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1561
+#: astro_smb_app/views/downloads.py:190
+msgid "已就绪 · {0}"
+msgstr ""
+
+#: astro_smb_gui/_browser.py:1579
 msgid "已展开 {name}: {count} 个文件任务"
 msgstr ""
 
@@ -3916,11 +3972,11 @@ msgstr ""
 msgid "已跳过"
 msgstr ""
 
-#: astro_smb_qt/shell.py:846
+#: astro_smb_qt/shell.py:893
 msgid "已连接"
 msgstr ""
 
-#: astro_smb_qt/shell.py:846
+#: astro_smb_qt/shell.py:893
 msgid "已连接 "
 msgstr ""
 
@@ -3928,7 +3984,7 @@ msgstr ""
 msgid "已连接 {0} ({1}) — {2} 个共享"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1069
+#: astro_smb_gui/_browser.py:1087
 msgid "已选中 {0} 项 ({1})"
 msgstr ""
 
@@ -3968,7 +4024,7 @@ msgstr ""
 msgid "平均 RMS {0:.2f}″(帧数加权)· 丢星 {lost} 帧"
 msgstr ""
 
-#: astro_smb_qt/shell.py:318 astro_smb_gui/main.xaml
+#: astro_smb_qt/shell.py:365 astro_smb_gui/main.xaml
 msgid "并发"
 msgstr ""
 
@@ -4032,7 +4088,7 @@ msgstr ""
 msgid "当前未连接"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:248
+#: astro_smb_qt/pages/space.py:257
 msgid "当前根 {0}"
 msgstr ""
 
@@ -4148,11 +4204,11 @@ msgstr ""
 msgid "成功分析的 FITS 少于两张，证据不足"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:158
+#: astro_smb_qt/__main__.py:300
 msgid "截图失败"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:156
+#: astro_smb_qt/__main__.py:298
 msgid "截图已保存: %s"
 msgstr ""
 
@@ -4172,7 +4228,7 @@ msgstr ""
 msgid "手动添加"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1034 astro_smb_gui/_window.py:512
+#: astro_smb_gui/_browser.py:1052 astro_smb_gui/_window.py:512
 msgid "打开 FITS 查看器失败: {ex}"
 msgstr ""
 
@@ -4228,7 +4284,7 @@ msgstr ""
 msgid "扩展名/类型"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:153
+#: astro_smb_qt/pages/space.py:162
 msgid "扫到一半的结果不完整,没有保留 —— 重新扫一次即可。"
 msgstr ""
 
@@ -4252,11 +4308,11 @@ msgstr ""
 msgid "扫描中…"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:211
+#: astro_smb_qt/pages/space.py:220
 msgid "扫描占用"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:210 astro_smb_gui/_space.py:711
+#: astro_smb_qt/pages/space.py:219 astro_smb_gui/_space.py:711
 msgid "扫描失败"
 msgstr ""
 
@@ -4276,7 +4332,7 @@ msgstr ""
 msgid "扫描局域网内的 SMB 设备(显示主机名与时延)"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:152
+#: astro_smb_qt/pages/space.py:161
 msgid "扫描已停止"
 msgstr ""
 
@@ -4288,7 +4344,7 @@ msgstr ""
 msgid "扫描已经跑完了 —— {HOSTS} 个地址里没有一台完成 SMB 协商。确认设备开着、和电脑在同一网段,再换个网段试试。"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:54 astro_smb_qt/pages/space.py:150 astro_smb_qt/pages/space.py:198  (+6)
+#: astro_smb_qt/pages/space.py:54 astro_smb_qt/pages/space.py:159 astro_smb_qt/pages/space.py:207  (+6)
 msgid "扫描此目录"
 msgstr ""
 
@@ -4384,7 +4440,7 @@ msgstr ""
 msgid "拍摄记录来自设备上的 Autorun_Log_*.txt —— 先连一台设备。"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1760
+#: astro_smb_gui/_browser.py:1778
 msgid "拖出 {0} 个文件到资源管理器松手即开始下载…"
 msgstr ""
 
@@ -4396,15 +4452,15 @@ msgstr ""
 msgid "拖出准备失败: {ex}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1758
+#: astro_smb_gui/_browser.py:1776
 msgid "拖出初始化失败: {ex}(可改用右键「复制到剪贴板」)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1765
+#: astro_smb_gui/_browser.py:1783
 msgid "拖出失败: {ex}(可改用右键「复制到剪贴板」)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1763
+#: astro_smb_gui/_browser.py:1781
 msgid "拖出完成"
 msgstr ""
 
@@ -4412,7 +4468,7 @@ msgstr ""
 msgid "拖出就绪:{total} 项已暂存"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1747
+#: astro_smb_gui/_browser.py:1765
 msgid "拖出暂只支持文件;目录请用「下载选中」或右键「复制到剪贴板」"
 msgstr ""
 
@@ -4488,15 +4544,15 @@ msgstr ""
 msgid "提星平面 {w_plane}×{h_plane} 与全分辨率 {w_full}×{h_full} 不是整数倍关系,请自己用 fits_xy_from_stars 换算后再传"
 msgstr ""
 
-#: astro_smb_app/preview.py:489
+#: astro_smb_app/preview.py:496
 msgid "提示"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:174 astro_smb_qt/pages/browser.py:448 astro_smb_gui/_browser.py:1789  (+2)
+#: astro_smb_qt/pages/browser.py:174 astro_smb_qt/pages/browser.py:448 astro_smb_gui/_browser.py:1807  (+2)
 msgid "搜索"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1821
+#: astro_smb_gui/_browser.py:1839
 msgid "搜索 {pattern} …"
 msgstr ""
 
@@ -4512,19 +4568,19 @@ msgstr ""
 msgid "搜索(支持 * ?)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1867
+#: astro_smb_gui/_browser.py:1885
 msgid "搜索中… 已找到 {0}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1847
+#: astro_smb_gui/_browser.py:1865
 msgid "搜索失败: {ex}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1876
+#: astro_smb_gui/_browser.py:1894
 msgid "搜索完成: {count} 项{cap} — 双击目录进入,选中可下载/拖出"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1794
+#: astro_smb_gui/_browser.py:1812
 msgid "搜索已停止"
 msgstr ""
 
@@ -4532,7 +4588,7 @@ msgstr ""
 msgid "搜索已经跑完 —— 这个目录树下确实没有。换个关键字或换个起点。"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:978
+#: astro_smb_gui/_browser.py:996
 msgid "搜索结果"
 msgstr ""
 
@@ -4612,11 +4668,11 @@ msgstr ""
 msgid "整段累计位移 {total_arcsec:.0f}″(≥{DRIFT_WALK_ARCSEC:.0f}″即认定目标在走);调用方没给像素尺度,无法换算成主镜像素"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:491 astro_smb_qt/pages/browser.py:213 astro_smb_gui/_browser.py:1304  (+1)
+#: astro_smb_app/views/browser.py:491 astro_smb_qt/pages/browser.py:213 astro_smb_gui/_browser.py:1322  (+1)
 msgid "文件"
 msgstr ""
 
-#: astro_smb/catalog_build.py:276
+#: astro_smb/catalog_build.py:327
 msgid "文件      : {path}"
 msgstr ""
 
@@ -4624,11 +4680,15 @@ msgstr ""
 msgid "文件不存在"
 msgstr ""
 
+#: astro_smb_app/views/downloads.py:194
+msgid "文件不完整({0})—— 重新下载会覆盖它"
+msgstr ""
+
 #: astro_smb_app/entries.py:47 astro_smb_app/entries.py:62
 msgid "文件夹"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1564
+#: astro_smb_gui/_browser.py:1582
 msgid "文件夹 {name} 已展开为 {count} 个文件任务"
 msgstr ""
 
@@ -4900,11 +4960,11 @@ msgstr ""
 msgid "星表 sha256 不符: 期望 {expect_sha256}, 实际 {got}"
 msgstr ""
 
-#: astro_smb/catalog.py:965
+#: astro_smb/catalog.py:996
 msgid "星表下载不完整: {done}/{total} 字节"
 msgstr ""
 
-#: astro_smb/catalog.py:970
+#: astro_smb/catalog.py:1001
 msgid "星表下载失败: {ex}"
 msgstr ""
 
@@ -4912,7 +4972,7 @@ msgstr ""
 msgid "星表下载失败: {message}"
 msgstr ""
 
-#: astro_smb/catalog.py:977 astro_smb/catalog.py:991 astro_smb/catalog.py:955
+#: astro_smb/catalog.py:1008 astro_smb/catalog.py:1022 astro_smb/catalog.py:986
 msgid "星表下载已取消"
 msgstr ""
 
@@ -4948,7 +5008,7 @@ msgstr ""
 msgid "星表条目数不符: 期望 {expect_count}, 实际 {count}"
 msgstr ""
 
-#: astro_smb/catalog_build.py:320
+#: astro_smb/catalog_build.py:371
 msgid "星表校验失败: {ex}"
 msgstr ""
 
@@ -5076,7 +5136,7 @@ msgstr ""
 msgid "最大深度"
 msgstr ""
 
-#: astro_smb/catalog_build.py:287
+#: astro_smb/catalog_build.py:338
 msgid "最大自行  : {max_pm_mas:.0f} mas/yr"
 msgstr ""
 
@@ -5172,6 +5232,10 @@ msgstr ""
 msgid "服务器名   : {0}"
 msgstr ""
 
+#: astro_smb_app/views/downloads.py:196
+msgid "未下载 · {0}"
+msgstr ""
+
 #: astro_smb_gui/_guiding.py:566
 msgid "未发现导星日志\n设备 log 目录暂无 PHD2_GuideLog_*.txt"
 msgstr ""
@@ -5196,7 +5260,7 @@ msgstr ""
 msgid "未知型"
 msgstr ""
 
-#: astro_smb_qt/shell.py:860
+#: astro_smb_qt/shell.py:907
 msgid "未知目标"
 msgstr ""
 
@@ -5216,7 +5280,7 @@ msgstr ""
 msgid "未达阈值(需 ≥{MIN_HITS} 项)"
 msgstr ""
 
-#: astro_smb/client.py:335 astro_smb_qt/shell.py:209 astro_smb_qt/shell.py:627  (+2)
+#: astro_smb/client.py:335 astro_smb_qt/shell.py:209 astro_smb_qt/shell.py:674  (+2)
 msgid "未连接"
 msgstr ""
 
@@ -5232,7 +5296,7 @@ msgstr ""
 msgid "未连接设备, 无法读取日志"
 msgstr ""
 
-#: astro_smb_qt/shell.py:203 astro_smb_qt/shell.py:837
+#: astro_smb_qt/shell.py:203 astro_smb_qt/shell.py:884
 msgid "未选择设备"
 msgstr ""
 
@@ -5268,7 +5332,7 @@ msgstr ""
 msgid "本地磁盘"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:255
+#: astro_smb_qt/pages/space.py:264
 msgid "本地索引 · {0}的统计"
 msgstr ""
 
@@ -5348,7 +5412,7 @@ msgstr ""
 msgid "本页估算"
 msgstr ""
 
-#: astro_smb/catalog_build.py:279
+#: astro_smb/catalog_build.py:330
 msgid "条目数    : {count:,}   文件大小 {0:.1f} MB"
 msgstr ""
 
@@ -5360,8 +5424,12 @@ msgstr ""
 msgid "来源"
 msgstr ""
 
-#: astro_smb/catalog_build.py:277
+#: astro_smb/catalog_build.py:328
 msgid "来源      : {source}  格式 v{version}  记录 {record_bytes} 字节"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:91
+msgid "来源:{host} · {note}"
 msgstr ""
 
 #: astro_smb_qt/pages/fitsview.py:94 astro_smb_qt/pages/fitsview.py:478 astro_smb_gui/fitsview.xaml
@@ -5370,6 +5438,10 @@ msgstr ""
 
 #: astro_smb/guidecheck.py:982
 msgid "板解算没有发现累计漂移,但缺少同期导星日志"
+msgstr ""
+
+#: astro_smb_app/views/downloads.py:64
+msgid "板解算要它。没有星表就认不出画面里是哪片天,星点叠加、足迹、极轴反解都跟着没有。"
 msgstr ""
 
 #: astro_smb_app/views/records.py:178
@@ -5388,15 +5460,15 @@ msgstr ""
 msgid "极轴误差"
 msgstr ""
 
-#: astro_smb/catalog_build.py:295
+#: astro_smb/catalog_build.py:346
 msgid "构建 Tycho-2 打包星表(14 字节/星)"
 msgstr ""
 
-#: astro_smb/catalog.py:906
+#: astro_smb/catalog.py:938
 msgid "构建出的星表条目数 {count} 与预期 {expect_count} 不符"
 msgstr ""
 
-#: astro_smb/catalog_build.py:345
+#: astro_smb/catalog_build.py:396
 msgid "构建失败: {ex}"
 msgstr ""
 
@@ -5460,6 +5532,10 @@ msgstr ""
 msgid "校准段无导星曲线"
 msgstr ""
 
+#: astro_smb_qt/__main__.py:119
+msgid "检查随包资源找不找得到(打完包必跑),不开界面"
+msgstr ""
+
 #: astro_smb_gui/_guidedash.py:1643
 msgid "椭圆(轴比 —)"
 msgstr ""
@@ -5500,7 +5576,7 @@ msgstr ""
 msgid "正在下载 {0} / {1}"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1477
+#: astro_smb_gui/_browser.py:1495
 msgid "正在下载原图并拉伸…"
 msgstr ""
 
@@ -5524,7 +5600,7 @@ msgstr ""
 msgid "正在下载并解析日志"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1614
+#: astro_smb_gui/_browser.py:1632
 msgid "正在下载所选项到暂存目录以便复制…"
 msgstr ""
 
@@ -5542,6 +5618,10 @@ msgstr ""
 
 #: astro_smb_qt/pages/transfers.py:26
 msgid "正在传输的任务,方块图显示每一块的状态"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:206
+msgid "正在停止…"
 msgstr ""
 
 #: astro_smb_gui/_sky3d.py:1571
@@ -5584,15 +5664,15 @@ msgstr ""
 msgid "正在打开"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:166
+#: astro_smb_qt/pages/space.py:175
 msgid "正在扫描 {where} 的占用"
 msgstr ""
 
-#: astro_smb_qt/pages/space.py:190
+#: astro_smb_qt/pages/space.py:199
 msgid "正在扫描 {where} 的占用 —— 已扫 {n} 文件 · {0}"
 msgstr ""
 
-#: astro_smb_qt/shell.py:860
+#: astro_smb_qt/shell.py:907
 msgid "正在拍摄 {0}"
 msgstr ""
 
@@ -5748,16 +5828,20 @@ msgstr ""
 msgid "正在读取日志…"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:525
+#: astro_smb_gui/_browser.py:543
 msgid "正在读取目录…"
 msgstr ""
 
-#: astro_smb_qt/shell.py:839
+#: astro_smb_qt/shell.py:886
 msgid "正在连接 {0} …"
 msgstr ""
 
 #: astro_smb_gui/_window.py:882
 msgid "正在连接 {host} …"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:105
+msgid "正在连接…"
 msgstr ""
 
 #: astro_smb_gui/_window.py:859
@@ -5836,7 +5920,7 @@ msgstr ""
 msgid "没有可上天球的目标"
 msgstr ""
 
-#: astro_smb_qt/shell.py:456
+#: astro_smb_qt/shell.py:503
 msgid "没有可连接的设备 —— 先去「扫描设备」找一台"
 msgstr ""
 
@@ -5872,7 +5956,7 @@ msgstr ""
 msgid "注意:实测场旋与这个极轴值对不上,现场还有别的机制 —— 只拧极轴多半解决不了"
 msgstr ""
 
-#: astro_smb_qt/shell.py:284
+#: astro_smb_qt/shell.py:331
 msgid "注意:还有 {busy} 个传输在进行,重启会中断它们。"
 msgstr ""
 
@@ -5900,7 +5984,7 @@ msgstr ""
 msgid "添加设备失败: {ex}"
 msgstr ""
 
-#: astro_smb_qt/pages/transfers.py:97 astro_smb_qt/shell.py:329 astro_smb_gui/main.xaml  (+1)
+#: astro_smb_qt/pages/transfers.py:97 astro_smb_qt/shell.py:376 astro_smb_gui/main.xaml  (+1)
 msgid "清除已完成"
 msgstr ""
 
@@ -6036,7 +6120,7 @@ msgstr ""
 msgid "画幅中心没走,但整场在转({0:+.1f}′)—— 导星只能摁住平移,摁不住场旋;这是极轴误差,越靠画幅边缘越糊"
 msgstr ""
 
-#: astro_smb_qt/shell.py:280
+#: astro_smb_qt/shell.py:327
 msgid "界面文案在启动时生成,切换语言需要重启。现在就重启吗?"
 msgstr ""
 
@@ -6088,11 +6172,11 @@ msgstr ""
 msgid "监控页回收失败: {ex}"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:474 astro_smb_app/views/space.py:166 astro_smb_gui/_browser.py:1286
+#: astro_smb_app/views/browser.py:474 astro_smb_app/views/space.py:166 astro_smb_gui/_browser.py:1304
 msgid "目录"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1567
+#: astro_smb_gui/_browser.py:1585
 msgid "目录 {name} 为空"
 msgstr ""
 
@@ -6100,7 +6184,7 @@ msgstr ""
 msgid "目录名"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1896
+#: astro_smb_gui/_browser.py:1914
 msgid "目录名:"
 msgstr ""
 
@@ -6116,7 +6200,7 @@ msgstr ""
 msgid "目录树(点行联动图块 · ▶/▼ 展开折叠 · ○ 图中未画出)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:601
+#: astro_smb_gui/_browser.py:619
 msgid "目录核对出错: {msg}"
 msgstr ""
 
@@ -6236,7 +6320,7 @@ msgstr ""
 msgid "确定"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:1055 astro_smb_gui/_browser.py:1941
+#: astro_smb_qt/pages/browser.py:1055 astro_smb_gui/_browser.py:1959
 msgid "确认删除"
 msgstr ""
 
@@ -6284,11 +6368,11 @@ msgstr ""
 msgid "稳定完成"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:669 astro_smb_gui/_browser.py:888
+#: astro_smb_app/views/browser.py:669 astro_smb_gui/_browser.py:906
 msgid "空"
 msgstr ""
 
-#: astro_smb_qt/shell.py:323 astro_smb_qt/shell.py:766
+#: astro_smb_qt/shell.py:370 astro_smb_qt/shell.py:813
 msgid "空闲"
 msgstr ""
 
@@ -6344,7 +6428,7 @@ msgstr ""
 msgid "第 %d 帧没带图幅尺寸, 请给 width/height"
 msgstr ""
 
-#: astro_smb_qt/shell.py:862
+#: astro_smb_qt/shell.py:909
 msgid "第 {0} 张"
 msgstr ""
 
@@ -6364,7 +6448,7 @@ msgstr ""
 msgid "等待空闲工作线程"
 msgstr ""
 
-#: astro_smb_app/views/browser.py:475 astro_smb_gui/_browser.py:1287
+#: astro_smb_app/views/browser.py:475 astro_smb_gui/_browser.py:1305
 msgid "类型"
 msgstr ""
 
@@ -6388,7 +6472,11 @@ msgstr ""
 msgid "红光"
 msgstr ""
 
-#: astro_smb_app/skymap.py:29
+#: astro_smb_app/views/downloads.py:88
+msgid "约 1.3 MB"
+msgstr ""
+
+#: astro_smb_app/skymap.py:29 astro_smb_app/views/downloads.py:78
 msgid "约 8 MB"
 msgstr ""
 
@@ -6522,6 +6610,18 @@ msgstr ""
 
 #: astro_smb_app/views/fitsview.py:175
 msgid "耗时 {elapsed_s:.1f}s"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:142
+msgid "联网下载"
+msgstr ""
+
+#: astro_smb_qt/shell.py:236 astro_smb_qt/shell.py:267
+msgid "联网下载 {got}/{total}"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:130
+msgid "联网下载 — Astro SMB Tool"
 msgstr ""
 
 #: astro_smb_gui/_guidedash.py:1181
@@ -6668,7 +6768,7 @@ msgstr ""
 msgid "观测夜"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:760 astro_smb_gui/_browser.py:1361 astro_smb_gui/_fitsview.py:1744
+#: astro_smb_gui/_browser.py:778 astro_smb_gui/_browser.py:1379 astro_smb_gui/_fitsview.py:1744
 msgid "观测夜 {key}(正午分界)"
 msgstr ""
 
@@ -6880,7 +6980,7 @@ msgstr ""
 msgid "试遍所有候选也没有一致的变换"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:485
+#: astro_smb_gui/_browser.py:503
 msgid "该共享不支持容量查询"
 msgstr ""
 
@@ -6916,7 +7016,7 @@ msgstr ""
 msgid "详细模式"
 msgstr ""
 
-#: astro_smb_qt/shell.py:238
+#: astro_smb_qt/shell.py:285
 msgid "语言"
 msgstr ""
 
@@ -6928,11 +7028,11 @@ msgstr ""
 msgid "请先填入或选中一个设备地址"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1797 astro_smb_gui/_browser.py:1886
+#: astro_smb_gui/_browser.py:1815 astro_smb_gui/_browser.py:1904
 msgid "请先打开一个共享"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1655
+#: astro_smb_gui/_browser.py:1673
 msgid "请先打开一个共享目录"
 msgstr ""
 
@@ -6948,7 +7048,7 @@ msgstr ""
 msgid "请输入设备地址,或到「扫描设备」页找一台"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1912
+#: astro_smb_gui/_browser.py:1930
 msgid "请选中单个文件/目录重命名"
 msgstr ""
 
@@ -6996,7 +7096,7 @@ msgstr ""
 msgid "读取实际视场"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:480
+#: astro_smb_gui/_browser.py:498
 msgid "读取容量…"
 msgstr ""
 
@@ -7026,6 +7126,10 @@ msgstr ""
 
 #: astro_smb_qt/pages/space.py:30
 msgid "谁占了空间 —— 嵌套 treemap,块面积正比于占用"
+msgstr ""
+
+#: astro_smb_qt/shell.py:233
+msgid "资源"
 msgstr ""
 
 #: astro_smb_app/views/guidedash.py:872 astro_smb_app/views/guiding.py:365 astro_smb_gui/_guidedash.py:1521  (+1)
@@ -7068,7 +7172,7 @@ msgstr ""
 msgid "超像素需要二维 CFA 阵列,收到 {ndim} 维"
 msgstr ""
 
-#: astro_smb/parallel.py:244 astro_smb_gui/_browser.py:1627
+#: astro_smb_gui/_browser.py:1645
 msgid "超时"
 msgstr ""
 
@@ -7152,7 +7256,7 @@ msgstr ""
 msgid "轴比 {ratio} · 方位 {0:+.0f}°"
 msgstr ""
 
-#: astro_smb/catalog_build.py:302
+#: astro_smb/catalog_build.py:353
 msgid "输出打包文件(默认 {0})"
 msgstr ""
 
@@ -7204,7 +7308,7 @@ msgstr ""
 msgid "还没有读取日志"
 msgstr ""
 
-#: astro_smb_qt/shell.py:534
+#: astro_smb_qt/shell.py:581
 msgid "还没有连接任何设备"
 msgstr ""
 
@@ -7272,6 +7376,10 @@ msgstr ""
 msgid "这段拍摄"
 msgstr ""
 
+#: astro_smb_qt/downloads.py:143
+msgid "这软件会联网取的全部东西都在这里。出发前在有网的地方先备齐,野外就不用再联了。"
+msgstr ""
+
 #: astro_smb_app/transfers.py:35 astro_smb_qt/pages/transfers.py:26 astro_smb_qt/pages/transfers.py:79  (+2)
 msgid "进行中"
 msgstr ""
@@ -7288,19 +7396,19 @@ msgstr ""
 msgid "远程路径格式: \"共享名/目录/文件\",共享名可含空格(记得加引号)。"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:39
+#: astro_smb_qt/__main__.py:123
 msgid "连上后直达这个目录(\"共享名/相对路径\")—— 验收/截图用"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:43
+#: astro_smb_qt/__main__.py:127
 msgid "连上后自动触发本页的主动作(扫描/开扫)—— 截图用"
 msgstr ""
 
-#: astro_smb/parallel.py:244 astro_smb_qt/pages/scan.py:234 astro_smb_qt/shell.py:198  (+2)
+#: astro_smb_qt/pages/scan.py:234 astro_smb_qt/shell.py:198 astro_smb_gui/_scan.py:269  (+1)
 msgid "连接"
 msgstr ""
 
-#: astro_smb_qt/shell.py:529
+#: astro_smb_qt/shell.py:576
 msgid "连接 {0} 失败: {exc}"
 msgstr ""
 
@@ -7392,7 +7500,7 @@ msgstr ""
 msgid "选择共享后点「扫描此目录」(不会自动全盘扫描)"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:294 astro_smb_gui/browser.xaml
+#: astro_smb_gui/_browser.py:301 astro_smb_gui/browser.xaml
 msgid "选择共享查看容量"
 msgstr ""
 
@@ -7400,11 +7508,11 @@ msgstr ""
 msgid "选择左侧目标查看详情"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:2052
+#: astro_smb_gui/_browser.py:2070
 msgid "选择目录"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:993 astro_smb_gui/_browser.py:2039
+#: astro_smb_qt/pages/browser.py:993 astro_smb_gui/_browser.py:2057
 msgid "选择要上传的文件"
 msgstr ""
 
@@ -7472,11 +7580,11 @@ msgstr ""
 msgid "遍历已取消"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:45
+#: astro_smb_qt/__main__.py:129
 msgid "配合 --seconds:退出前把窗口截到这个 png"
 msgstr ""
 
-#: astro_smb_qt/__main__.py:35
+#: astro_smb_qt/__main__.py:116
 msgid "配色:normal 常规 / red 红光(夜间不破坏暗适应)"
 msgstr ""
 
@@ -7496,7 +7604,7 @@ msgstr ""
 msgid "采集于 {0}"
 msgstr ""
 
-#: astro_smb_qt/shell.py:287
+#: astro_smb_qt/shell.py:334
 msgid "重启"
 msgstr ""
 
@@ -7528,7 +7636,7 @@ msgstr ""
 msgid "重命名/移动(同共享内)"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:918 astro_smb_gui/_browser.py:437
+#: astro_smb_qt/pages/browser.py:918 astro_smb_gui/_browser.py:444
 msgid "重命名…"
 msgstr ""
 
@@ -7538,6 +7646,10 @@ msgstr ""
 
 #: astro_smb_qt/pages/records.py:344
 msgid "重投影底图"
+msgstr ""
+
+#: astro_smb_qt/downloads.py:97
+msgid "重新下载"
 msgstr ""
 
 #: astro_smb_qt/pages/records.py:390 astro_smb_gui/_records.py:1703
@@ -7624,7 +7736,7 @@ msgstr ""
 msgid "阴影裁切 −2.80 σ"
 msgstr ""
 
-#: astro_smb/catalog_build.py:336
+#: astro_smb/catalog_build.py:387
 msgid "需要 --src 或 --download"
 msgstr ""
 
@@ -7648,11 +7760,11 @@ msgstr ""
 msgid "页面 on_hide 失败: {ex}"
 msgstr ""
 
-#: astro_smb_qt/shell.py:375
+#: astro_smb_qt/shell.py:422
 msgid "页面 on_show 失败: %s"
 msgstr ""
 
-#: astro_smb_qt/shell.py:793
+#: astro_smb_qt/shell.py:840
 msgid "页面关闭钩子失败"
 msgstr ""
 
@@ -7676,7 +7788,7 @@ msgstr ""
 msgid "预览"
 msgstr ""
 
-#: astro_smb_gui/_browser.py:1452
+#: astro_smb_gui/_browser.py:1470
 msgid "预览失败: {error}"
 msgstr ""
 
@@ -7704,7 +7816,7 @@ msgstr ""
 msgid "高度"
 msgstr ""
 
-#: astro_smb_qt/pages/browser.py:701 astro_smb_gui/_browser.py:1439
+#: astro_smb_qt/pages/browser.py:701 astro_smb_gui/_browser.py:1457
 msgid "高度 {alt:.0f}° · 方位 {0}"
 msgstr ""
 
