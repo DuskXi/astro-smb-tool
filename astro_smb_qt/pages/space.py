@@ -120,11 +120,20 @@ class SpacePage(Page):
     # ------------------------------------------------------------ 扫描
 
     def _pick_share(self, idx: int) -> None:
-        if 0 <= idx < self.share_combo.count():
-            self.share = self.share_combo.itemText(idx)
-            self.crumbs = []        # 换共享清面包屑
-            self.path = ""
-            self._idle()
+        if not (0 <= idx < self.share_combo.count()):
+            return
+        # **扫着的时候换共享,得把在途那次收干净。** 原来什么都不做,
+        # 于是三件事同时不对、而且都不报错:旧扫描继续跑;世代没作废,
+        # 它算完之后 `_apply` 照常接受 —— **把旧共享的占用图画在新共享
+        # 的标题下面**;按钮还写着「停止」而画面已经是空态。
+        # 最贵的是第二条:屏幕上是一张看起来完全正常的图,只是属于别人。
+        if self._busy:
+            self._stop_scan()
+        self.share = self.share_combo.itemText(idx)
+        self.crumbs = []        # 换共享清面包屑
+        self.path = ""
+        self.root = None        # 旧共享的树不能留着给新共享当底
+        self._idle()            # 盖掉 `_stop_scan` 那句「扫描已停止」
 
     def _toggle_scan(self) -> None:
         """一颗按钮两个状态(老 UI 同款)。原来全页**没有任何取消入口** ——

@@ -28,13 +28,20 @@ from astro_smb.fitshdr import BLOCK, FitsHeader, header_read_hint, parse_fits_he
 from astro_smb.util import human_size
 from astro_smb.i18n import N_, gettext as _
 
-IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tif", ".tiff", ".webp"}
-FITS_EXTS = {".fit", ".fits", ".fts"}
-TEXT_EXTS = {".txt", ".log", ".json", ".ini", ".cfg", ".csv", ".md", ".py", ".sh", ".yaml", ".yml"}
+# 扩展名表**同一份** —— 分类(浏览页归到哪一栏)与预览(能不能打开)
+# 用的是同一套判据,原来这里各写了一遍。而且已经分叉了:两边的
+# `TEXT_EXTS` 不一样,于是一个 `.yaml` 在浏览页归到"其他",点开却
+# 按文本预览出来了。
+from astro_smb_app.entries import (FITS_EXTS, IMAGE_EXTS,
+                                   TEXT_EXTS as _ENTRY_TEXT_EXTS)
+
+#: 预览认得的文本类型**比分类那份多**。这是有意的:分类是给人看的
+#: 粗分栏,预览只需要"能不能当纯文本读"。写成显式的加法,而不是
+#: 各写一份然后碰巧不一样 —— 后者下次谁动了哪边都没人看得见。
+TEXT_EXTS = _ENTRY_TEXT_EXTS | {".py", ".sh", ".yaml", ".yml"}
 
 IMAGE_MAX = 25 << 20      # 图片超过 25MB 不自动下载
 TEXT_MAX = 128 << 10      # 文本最多读 128KB
-FITS_AUTO_MAX = 0         # FITS 一律不自动下载全图(有 _thn.jpg 兜底)
 THUMB_SIZE = 1024
 
 

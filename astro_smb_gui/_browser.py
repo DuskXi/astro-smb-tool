@@ -211,6 +211,12 @@ class BrowserPage:
         self.dispatcher = shell.dispatcher
 
         self.share: str | None = None
+        #: **用户最后点的那个共享**,点下去那一刻就定了。
+        #: 与 `self.share` 不是一回事:后者要等 `_navigate` 查完缓存/
+        #: 列完目录才赋值。异步回调判"用户是不是已经换走了"必须看这个 ——
+        #: 看 `self.share` 的话,凡是比 `_navigate` 先回来的结果都会被
+        #: 自己的守卫丢掉。
+        self._want_share: str | None = None
         self.path: str = ""
         self.entries: list[RemoteEntry] = []
         self._rendered: list[RemoteEntry] = []
@@ -282,6 +288,7 @@ class BrowserPage:
                 ToolTipService.SetToolTip(tb, s.remark)
             self.shares_list.Items.Append(tb)
         self.share = None
+        self._want_share = None
         self.path = ""
         self.entries = []
         self._rendered = []
@@ -473,13 +480,24 @@ class BrowserPage:
         if idx is None or idx < 0 or idx >= len(getattr(self, "_shares", [])):
             return
         share = self._shares[idx].name
+        # **在发任务之前记下来。** 下面两个任务谁先回来没有保证,而
+        # `_load_volume` 要靠这个判断用户有没有换走。
+        self._want_share = share
         asyncui.create_task(self._navigate(share, ""))
         asyncui.create_task(self._load_volume(share))
 
     async def _load_volume(self, share: str) -> None:
+        """读容量填进度条。**判过期看 `_want_share`,不看 `self.share`。**
+
+        `self.share` 是 `_navigate` 里才赋的,而它要先查缓存、再列目录。
+        本地磁盘后端(ZWO 卡直插电脑)的 `volume_info` 是微秒级的,
+        经常比 `_navigate` 先回来 —— 那时 `self.share` 还是上一个,
+        守卫命中,**结果被自己丢掉,容量条永远停在"读取容量…"**。
+        不报错,再点一次可能又好了,所以一直被当成偶发。
+        """
         self.vol_text.Text = _("读取容量…")
         vi = await asyncio.to_thread(self.shell.client.volume_info, share)
-        if self.share != share:
+        if self._want_share != share:
             return
         if vi is None:
             self.vol_text.Text = _("该共享不支持容量查询")

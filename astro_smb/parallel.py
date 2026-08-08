@@ -240,5 +240,20 @@ class ParallelDownloader:
 
 
 def _is_conn_error(e: SmbClientError) -> bool:
+    """断连类错误吗 —— 值不值得 `reconnect()` 之后重试这一块。
+
+    **判结构化标志,不在消息里搜关键词。** 原来是
+    ``any(k in str(e) for k in (_("中断"), _("超时"), _("连接"), …))`` ——
+    在**翻译过的**消息里找**翻译过的**关键词。中文下"下载超时"恰好含
+    "超时",换一种语言未必:译文里那个孤零零的词不一定是整句的子串。
+    失效的样子是:分块下载遇到断连不再重连重试,直接把异常抛上去 ——
+    不报错,只是大文件的成功率悄悄掉下来,而且只在非中文界面上。
+
+    i18n 那一轮把 `transfers._is_retryable` 与 `client.makedirs` 都改了,
+    **漏了这里**。剩下那两个 ASCII 词是兜底:有些异常没经过 `_run`
+    (底层库自己抛的 socket 文本),它们与语言无关。
+    """
+    if getattr(e, "retryable", False):
+        return True
     s = str(e)
-    return any(k in s for k in (_("中断"), _("超时"), "timeout", _("连接"), "reset"))
+    return any(k in s for k in ("timeout", "reset", "Broken pipe"))
