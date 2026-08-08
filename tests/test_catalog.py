@@ -959,9 +959,13 @@ class TestUpstreamBuildFallback:
         """
         seen = []
 
-        def fake_dl(dest_dir, parts=None, progress=None):
-            # **照 `download_parts` 的真实调用形状**:四个参数
+        def fake_dl(dest_dir, parts=None, progress=None, on_bytes=None):
+            # **照 `download_parts` 的真实调用形状。** 两个回调都要有:
+            # `progress` 一个分片响一次,`on_bytes` 是下载过程中
+            # 每 0.25 秒一次的真字节数(界面上数字动不动靠它)。
+            on_bytes(1_000_000)
             progress(0, 20, "tyc2.dat.00.gz", False)
+            on_bytes(80_000_000)
             progress(20, 20, "tyc2.dat.19.gz", False)
             return []
 
@@ -974,8 +978,11 @@ class TestUpstreamBuildFallback:
         C._build_from_upstream(tmp_path / "c.bin",
                                      progress=lambda d, t: seen.append((d, t)))
         total = C.UPSTREAM_BYTES
-        assert seen[0] == (0, total)
+        # 第一下不再是恰好 0 —— 现在下载**过程中**就按真字节数报,
+        # 而那一刻盘上已经有东西了。要的是"从很小开始、单调不倒退"。
+        assert 0 <= seen[0][0] < total * 0.1, seen[0]
         assert seen[-1] == (total, total)
+        assert seen == sorted(seen), f"进度倒退了: {seen}"
         assert any(d == int(total * 0.85) for d, _t in seen), (
             "要有下载→构建的分段切换")
         assert all(t == total for _d, t in seen), "分母中途换了单位"

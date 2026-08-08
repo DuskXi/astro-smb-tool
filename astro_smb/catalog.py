@@ -872,6 +872,23 @@ def _build_from_upstream(dest: Path, *, progress=None,
     work.mkdir(parents=True, exist_ok=True)
     tmp = dest.with_name(dest.name + ".part")
 
+    # **只许往前走。** 下载段现在有两个来源在报:`dl_bytes` 每 0.25 秒一次
+    # 真字节数(细),`dl_progress` 每个分片完成时一次(粗)。两者对同一段
+    # 进度的估计不一样,谁后到就听谁的话,进度条会**往回跳** —— 实测:
+    # 下了 1 MB(0.5%)之后第一个分片完成,`dl_progress(0, 20)` 报 0,
+    # 条子当场缩回起点。用户看到的是"下着下着又从头开始了"。
+    #
+    # 夹在这里而不是在两个回调里各写一遍:来源以后还可能加,而"不许倒退"
+    # 是这条进度**本身**的性质。
+    _high = [0]
+
+    def report(done: int) -> None:
+        if done <= _high[0]:
+            return
+        _high[0] = done
+        if progress:
+            progress(done, UPSTREAM_BYTES)
+
     def dl_progress(done: int, total: int, name: str = "",
                     cached: bool = False) -> None:
         """`download_parts` 的进度 → `ensure_catalog` 的进度。
@@ -890,16 +907,31 @@ def _build_from_upstream(dest: Path, *, progress=None,
         """
         if cancel is not None and cancel.is_set():
             raise CatalogError(_("已取消"))
-        if progress:
-            frac = (float(done) / float(total)) if total else 0.0
-            progress(int(UPSTREAM_BYTES * 0.85 * frac), UPSTREAM_BYTES)
+        frac = (float(done) / float(total)) if total else 0.0
+        report(int(UPSTREAM_BYTES * 0.85 * frac))
 
-    try:
-        parts = CB.download_parts(work, progress=dl_progress)
+    def dl_bytes(done: int) -> None:
+        """下载**过程中**的字节数 → `ensure_catalog` 的进度。
+
+        `dl_progress` 一个分片才响一次:20 下、每下跳 8 MB,而且第一下要等
+        第一个分片整个下完 —— 在那之前界面上一个数字都没有。这条是每 0.25
+        秒一次的真字节数。
+
+        **上限卡在 84%**,把最后那一格留给 `download_parts` 返回之后的那次
+        回报。`UPSTREAM_BYTES` 只是估计值,真实总量可能略大;不卡的话进度条
+        会先冲到 85% 再退回来。
+        """
         if cancel is not None and cancel.is_set():
             raise CatalogError(_("已取消"))
-        if progress:
-            progress(int(UPSTREAM_BYTES * 0.85), UPSTREAM_BYTES)
+        frac = min(float(done) / float(UPSTREAM_BYTES), 0.99)
+        report(int(UPSTREAM_BYTES * 0.84 * frac))
+
+    try:
+        parts = CB.download_parts(work, progress=dl_progress,
+                                  on_bytes=dl_bytes)
+        if cancel is not None and cancel.is_set():
+            raise CatalogError(_("已取消"))
+        report(int(UPSTREAM_BYTES * 0.85))
         hdr = CB.build(work, tmp)
         if expect_count and hdr.count != expect_count:
             raise CatalogError(
@@ -907,10 +939,9 @@ def _build_from_upstream(dest: Path, *, progress=None,
                     count=hdr.count, expect_count=expect_count))
         validate_catalog_file(tmp, expect_count=expect_count or None)
         os.replace(tmp, dest)
-        if progress:
-            # 收尾也用同一把尺子(字节),别在最后一下把单位换掉 ——
-            # 前端渲染的是 MB,忽然跳成 "0/0 MB" 只会看着像出错了
-            progress(UPSTREAM_BYTES, UPSTREAM_BYTES)
+        # 收尾也用同一把尺子(字节),别在最后一下把单位换掉 ——
+        # 前端渲染的是 MB,忽然跳成 "0/0 MB" 只会看着像出错了
+        report(UPSTREAM_BYTES)
         return dest
     except BaseException:
         _unlink_quiet(tmp)

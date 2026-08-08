@@ -211,12 +211,44 @@ def build(src, out, *, max_mag: float | None = None,
 
 # ---------------------------------------------------------------- 下载原始数据
 
-def download_parts(dest_dir, parts=TYC2_PARTS, progress=None) -> list[Path]:
+#: 下载时多久回报一次字节数。**别调大。** 这是"界面上的数字动不动"的
+#: 采样率;调到 1 秒以上,慢链路上看起来又像卡住了。
+_BYTES_POLL_S = 0.25
+
+
+def downloaded_bytes(dest_dir) -> int:
+    """``dest_dir`` 里已经落盘的分片字节总数(含正在下的那个的半截)。
+
+    **进度按这个算,不按"第几个分片"。** curl 是子进程,它的进度条写在
+    stderr 上、而且被 `capture_output` 吞掉了,拿不到;但文件大小是随时
+    能看的,还天然把断点续传(`-C -`)和已缓存的分片都算了进去。
+    """
+    out = 0
+    for p in Path(dest_dir).glob("tyc2.dat.*"):
+        try:
+            out += p.stat().st_size
+        except OSError:                 # 正在被 curl 换名/删除
+            pass
+    return out
+
+
+def download_parts(dest_dir, parts=TYC2_PARTS, progress=None,
+                   on_bytes=None) -> list[Path]:
     """把 CDS 的 20 个分片下到 ``dest_dir``(已存在且 gzip 完好的跳过)。
 
     用 ``curl.exe`` 断点续传(``-C -``),下完**必须 ``gzip`` 完整性自检** ——
     截断的分片会让构建出来的星表少几万颗星却毫无征兆(与 §7.5「半截缓存被
     当成完整文件」同源)。
+
+    两个进度回调,用途不同:
+
+    * ``progress(i+1, len(parts), name, cached)`` —— **每个分片完成时**一次。
+      给的是"第几个",带文件名与是否命中缓存。
+    * ``on_bytes(done)`` —— 下载**过程中**每 0.25 秒一次,给已落盘的字节数。
+
+    **界面要的是后者。** 只有前者的话,20 个分片 = 进度只动 20 下,每下
+    跳 8 MB;而且**第一下要等第一个分片整个下完**,在那之前屏幕上一个数字
+    都没有 —— 慢链路上就是"点了没反应"。
     """
     import subprocess
 
@@ -229,19 +261,36 @@ def download_parts(dest_dir, parts=TYC2_PARTS, progress=None) -> list[Path]:
             got.append(dst)
             if progress is not None:
                 progress(i + 1, len(parts), name, True)
+            if on_bytes is not None:
+                on_bytes(downloaded_bytes(out_dir))
             continue
+        argv = paths.curl_argv("-sSL", "--max-time", "900", "--retry", "3",
+                               "-C", "-", "-o", str(dst),
+                               f"{TYC2_BASE_URL}/{name}")
         try:
-            proc = subprocess.run(
-                paths.curl_argv("-sSL", "--max-time", "900", "--retry", "3",
-                 "-C", "-", "-o", str(dst), f"{TYC2_BASE_URL}/{name}"),
-                capture_output=True, timeout=1000,
-                creationflags=paths.NO_WINDOW)
+            # **不用 `subprocess.run`。** 它要等子进程结束才返回,而这一等
+            # 就是几十秒 —— 界面在这几十秒里拿不到任何进度。改成 Popen +
+            # 轮询文件大小,curl 的续传/重试一点没变。
+            with subprocess.Popen(argv, stdout=subprocess.PIPE,
+                                  stderr=subprocess.PIPE,
+                                  creationflags=paths.NO_WINDOW) as proc:
+                deadline = time.monotonic() + 1000
+                while proc.poll() is None:
+                    if on_bytes is not None:
+                        on_bytes(downloaded_bytes(out_dir))
+                    if time.monotonic() > deadline:
+                        proc.kill()
+                        raise CatalogError(
+                            _("下载 {name} 失败: 超时").format(name=name))
+                    time.sleep(_BYTES_POLL_S)
+                _out, err_b = proc.communicate()
+                rc = proc.returncode
         except (OSError, subprocess.SubprocessError) as ex:
             raise CatalogError(_("下载 {name} 失败: {ex}").format(name=name, ex=ex)) from ex
-        if proc.returncode != 0:
-            err = proc.stderr.decode("utf-8", errors="replace").strip()
+        if rc != 0:
+            err = (err_b or b"").decode("utf-8", errors="replace").strip()
             raise CatalogError(_("下载 {name} 失败: {0}").format(
-                err or proc.returncode, name=name))
+                err or rc, name=name))
         if not _gzip_ok(dst):
             try:
                 dst.unlink(missing_ok=True)     # 截断分片不留下
@@ -251,6 +300,8 @@ def download_parts(dest_dir, parts=TYC2_PARTS, progress=None) -> list[Path]:
         got.append(dst)
         if progress is not None:
             progress(i + 1, len(parts), name, False)
+        if on_bytes is not None:
+            on_bytes(downloaded_bytes(out_dir))
     return got
 
 
