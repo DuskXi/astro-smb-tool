@@ -9,6 +9,10 @@ on:
 
 permissions:
   contents: read
+  # 下面两条是 `attest-build-provenance` 要的:拿 GitHub 的 OIDC 身份
+  # 给产物签一张来源证明。
+  id-token: write
+  attestations: write
 
 jobs:
   package:
@@ -63,6 +67,37 @@ jobs:
         run: Compress-Archive dist/astro-smb-tool astro-smb-tool-${{ matrix.rid }}.zip
       - if: runner.os != 'Windows'
         run: tar -czf astro-smb-tool-${{ matrix.rid }}.tar.gz -C dist astro-smb-tool
+
+      # **校验和。** 包没有签名(见 README 路线图),那至少让人能验
+      # 「我下到的和你打出来的是同一份」。不要钱,不需要任何证书。
+      - if: runner.os == 'Windows'
+        run: >-
+          $h = (Get-FileHash astro-smb-tool-${{ matrix.rid }}.zip -Algorithm SHA256).Hash.ToLower();
+          "$h  astro-smb-tool-${{ matrix.rid }}.zip"
+          | Out-File -Encoding ascii astro-smb-tool-${{ matrix.rid }}.sha256
+      - if: runner.os == 'macOS'
+        run: shasum -a 256 astro-smb-tool-${{ matrix.rid }}.tar.gz > astro-smb-tool-${{ matrix.rid }}.sha256
+      - if: runner.os == 'Linux'
+        run: sha256sum astro-smb-tool-${{ matrix.rid }}.tar.gz > astro-smb-tool-${{ matrix.rid }}.sha256
+
+      # **构建来源证明(build provenance)。** GitHub 用它的 OIDC 身份签一张
+      # 证书,说明这个文件是由本仓库的这个 commit、在这条 workflow 里打出来的。
+      # 也不要钱,验起来一条命令:
+      #
+      #     gh attestation verify astro-smb-tool-osx-x64.tar.gz -R DuskXi/astro-smb-tool
+      #
+      # **它不能替代代码签名** —— Gatekeeper 与 SmartScreen 不看这个。
+      # 它解决的是另一半问题:产物的来路查不查得清。
+      # 按平台分开:每台机器只产出一个包,而这个 action 对着一个不存在的
+      # 路径会直接失败。
+      - if: runner.os == 'Windows'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: astro-smb-tool-${{ matrix.rid }}.zip
+      - if: runner.os != 'Windows'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: astro-smb-tool-${{ matrix.rid }}.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:

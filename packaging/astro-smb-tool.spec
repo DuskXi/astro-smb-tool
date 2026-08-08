@@ -29,6 +29,7 @@ PyInstaller 6 的 onedir 把随包数据放进 `_internal/`,而 `sys._MEIPASS` �
 `bundle_root()` / `install_root()` 分开两个函数就是为了这个;当年把两者当成
 一回事,打出来的包一启动就说"找不到资源",**只有真的运行一次才发现**。
 """
+import os
 import platform
 import sys
 from pathlib import Path
@@ -46,6 +47,22 @@ from PyInstaller.utils.hooks import collect_data_files
 _TARGET_ARCH = None
 if sys.platform == "darwin":
     _TARGET_ARCH = "arm64" if platform.machine() == "arm64" else "x86_64"
+
+#: mac 代码签名身份。**现在是空的** —— 没有 Apple 开发者证书,包是 ad-hoc
+#: 签的(PyInstaller 自己那一下),经过网络传输后会被 Gatekeeper 拦。
+#:
+#: 拿到 "Developer ID Application" 证书之后,**只要设这个环境变量**:
+#:
+#:     export ASTRO_SMB_CODESIGN_ID="Developer ID Application: 名字 (TEAMID)"
+#:
+#: PyInstaller 会用它把收集到的**每一个** dylib/framework 都签一遍 ——
+#: 漏签任何一个,公证都会被退回。签完还要 notarize + staple,那两步在
+#: docs/DEVELOPMENT.md §14 里。
+#:
+#: 硬化运行时(公证的前提)需要 entitlements:Qt/Chromium 要 JIT,
+#: PyInstaller 装载的 dylib 不是同一 team 签的、要关掉 library validation。
+_CODESIGN_ID = os.environ.get("ASTRO_SMB_CODESIGN_ID") or None
+_ENTITLEMENTS = os.environ.get("ASTRO_SMB_ENTITLEMENTS") or None
 
 ROOT = Path(SPECPATH).parent          # noqa: F821 - SPECPATH 由 PyInstaller 注入
 
@@ -110,8 +127,8 @@ exe = EXE(                                                       # noqa: F821
     disable_windowed_traceback=False,
     argv_emulation=sys.platform == "darwin",   # mac 上双击/拖放传参
     target_arch=_TARGET_ARCH,  # mac:瘦成本机架构,见文件头
-    codesign_identity=None,
-    entitlements_file=None,
+    codesign_identity=_CODESIGN_ID,
+    entitlements_file=_ENTITLEMENTS,
 )
 
 coll = COLLECT(                                                  # noqa: F821

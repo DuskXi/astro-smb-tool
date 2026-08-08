@@ -834,6 +834,75 @@ PySide6 自己倒是 universal2。
   提供。清单在 `release.yml` 那一步 apt 里,是在 `ubuntu:22.04` 容器里一个一个
   试出来的 —— 少一个的表现是启动就 `ImportError: libXXX.so.N`。
 
+### 签名与公证(还没做,路线写在这儿)
+
+现在的包**没有签名**。本机打本机跑没事;一旦经过网络传输,系统会拦。
+两个平台的门槛差得很远,值不值得花钱也不一样。
+
+#### 免费的那部分,已经做了
+
+- **SHA-256 校验和**随产物一起发(`release.yml`),让人能验"我下到的和你
+  打出来的是同一份";
+- **构建来源证明**(`actions/attest-build-provenance`)—— GitHub 用它的 OIDC
+  身份签一张"这份文件来自本仓库这个 commit、这条 workflow",验证一条命令:
+
+  ```bash
+  gh attestation verify astro-smb-tool-osx-x64.tar.gz -R DuskXi/astro-smb-tool
+  ```
+
+  **它不能替代代码签名** —— Gatekeeper 与 SmartScreen 不看这个。它解决的是
+  另一半:来路查不查得清。
+
+#### macOS —— 这边是刚需
+
+Gatekeeper 拦的是带 `com.apple.quarantine` 属性的东西。而且**新系统上绕过
+更麻烦了**:以前右键「打开」就行,现在要去「系统设置 → 隐私与安全性」里
+点「仍要打开」,还得先失败一次。
+
+正规但**不上 App Store** 的路子只有一条:**Developer ID + 公证**。
+
+1. Apple Developer Program,99 美元/年(个人也能办);
+2. 签一张 **Developer ID Application** 证书(免费会员拿不到这一类);
+3. 打包时设 `ASTRO_SMB_CODESIGN_ID`,PyInstaller 会把收集到的**每一个**
+   dylib/framework 都签一遍 —— **漏签任何一个,公证都会被退回**;
+4. 硬化运行时(公证的前提)要 entitlements。Qt/Chromium 要 JIT,而
+   PyInstaller 装载的 dylib 不是同一 team 签的:
+
+   ```xml
+   <key>com.apple.security.cs.allow-jit</key><true/>
+   <key>com.apple.security.cs.allow-unsigned-executable-memory</key><true/>
+   <key>com.apple.security.cs.disable-library-validation</key><true/>
+   ```
+
+5. `xcrun notarytool submit --wait` 上传给苹果做自动扫描(几分钟);
+6. `xcrun stapler staple` 把票据钉进产物 —— **钉完才能离线首启不联网**。
+
+**第 6 步决定了产物形态**:`stapler` 只认 `.app` / `.dmg` / `.pkg`,
+钉不了一个裸可执行文件。也就是说"要不要做 `.app`"和"要不要公证"是同一个
+决定,不是两件事。而 `.app` 又和现在的 `console=True` 冲突(缺依赖时那句
+提示得有地方显示),真做的时候要想清楚两全的办法。
+
+#### Windows —— 可做可不做
+
+不签的表现是 SmartScreen 弹一句"Windows 已保护你的电脑",点「更多信息 →
+仍要运行」就过去了。**比 macOS 那边轻得多**,一个小工具扛得住。
+
+真要签,按性价比排:
+
+| | 价钱 | 效果 |
+|---|---|---|
+| Azure Trusted Signing | 约 10 美元/月 | 不用买硬件令牌,能直接接进 CI;要过身份核验 |
+| OV 证书 | 200~400 美元/年 | **仍然会弹 SmartScreen**,要靠下载量慢慢攒信誉 |
+| EV 证书 | 400~700 美元/年 | 第一天就没有警告;必须配硬件令牌,CI 里难用 |
+| SignPath(开源项目) | 免费 | 面向 OSS 的赞助计划,要申请 |
+
+2023 年 6 月之后,OV/EV 的私钥都必须放在符合 FIPS 140-2 Level 2 的硬件里 ——
+所以"买张证书扔进 CI"这条路已经没有了,Azure Trusted Signing 那类云服务
+是现在唯一顺手的接法。
+
+**结论**:先做 macOS(99 美元/年,而且那边不做就真的很难用),Windows 那边
+先留着 SmartScreen 提示,等真有人抱怨再说。
+
 ### WSLg 上天球画不出来(不是 bug)
 
 WSLg 里 Chromium 的 GPU 通道拿不到纹理,天球的 WebGL 画布是**黑的**,日志刷
