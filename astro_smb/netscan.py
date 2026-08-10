@@ -24,7 +24,10 @@
 from __future__ import annotations
 
 import concurrent.futures as cf
+import ipaddress
 import socket
+
+from astro_smb.i18n import gettext as _
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any
@@ -145,8 +148,100 @@ def valid_subnet(text: str) -> str:
     return prefix
 
 
+#: 一次扫描最多探多少个地址。**这不是性能调优,是防手滑。**
+#: 打一个 `/16` 进去是 65534 次探测 —— 按 64 并发、每个 0.4 秒算要七分钟,
+#: 而界面上只会显示"正在探测",看起来就是卡死。超过就截断并如实说。
+MAX_HOSTS = 4096
+
+
+def parse_target(text: str) -> ipaddress.IPv4Network | None:
+    """把用户输入变成一个网络。**认不出返回 None。**
+
+    收四种写法,前两种是历史形式(等价于 /24):
+
+    * ``192.168.1``      三段前缀
+    * ``192.168.1.``     带尾点
+    * ``192.0.2.0/24`` CIDR,**前缀长度随便**
+    * ``192.0.2.5/22`` 主机位不为零也行(按 `strict=False` 归到网络地址)
+
+    加 CIDR 是因为**很多人的网不是 /24**:办公室、宿舍、带 AP 的实验室
+    常见 /22 甚至 /16。原来只认三段前缀,那些人的设备所在段根本扫不到,
+    而界面上看起来是"这段里没有设备"。
+    """
+    s = (text or "").strip()
+    if not s:
+        return None
+    if "/" in s:
+        try:
+            return ipaddress.ip_network(s, strict=False)     # type: ignore[return-value]
+        except ValueError:
+            return None
+    s = s.rstrip(".")
+    parts = s.split(".")
+    if len(parts) == 3 and all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+        s = f"{s}.0/24"
+    elif len(parts) == 4 and all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+        s = f"{s}/24"                       # 给了整地址就当它所在的 /24
+    else:
+        return None
+    try:
+        net = ipaddress.ip_network(s, strict=False)
+    except ValueError:
+        return None
+    return net if isinstance(net, ipaddress.IPv4Network) else None
+
+
+def target_hosts(net: ipaddress.IPv4Network, limit: int | None = None) -> list[str]:
+    """网络里要探的地址。**截断到 `limit`**(默认 :data:`MAX_HOSTS`)。
+
+    `/31`、`/32` 上 `hosts()` 的语义是特例(没有"可用主机"的概念),
+    这里直接把网络地址本身算进去 —— 用户填 `/32` 就是想探那一个。
+    """
+    cap = MAX_HOSTS if limit is None else limit
+    if net.prefixlen >= 31:
+        return [str(a) for a in net][:cap]
+    out: list[str] = []
+    for ip in net.hosts():
+        out.append(str(ip))
+        if len(out) >= cap:
+            break
+    return out
+
+
+def describe_target(text: str) -> str:
+    """给界面用的一句话:这次要扫多大、会不会被截断。"""
+    net = parse_target(text)
+    if net is None:
+        return ""
+    ips = target_hosts(net)
+    total = net.num_addresses if net.prefixlen >= 31 else max(
+        net.num_addresses - 2, 0)
+    if len(ips) < total:
+        return _("{net} 共 {total} 个地址,只探前 {n} 个").format(
+            net=net.with_prefixlen, total=total, n=len(ips))
+    return _("{net} · {n} 个地址").format(net=net.with_prefixlen, n=len(ips))
+
+
+def local_networks() -> list[str]:
+    """本机每块网卡的网络,**带真实前缀长度**(``192.0.2.0/24``)。
+
+    拿不到(平台不支持 / 枚举失败)就退回 `local_subnets()` 按地址猜的 /24 ——
+    猜错的后果是扫漏,不是崩。
+    """
+    from astro_smb import netifaces
+
+    nets = netifaces.local_networks()
+    if nets:
+        return nets
+    return [f"{s}.0/24" for s in local_subnets()]
+
+
 def local_subnets() -> list[str]:
-    """本机所在的那些 /24。多网卡时不止一个。"""
+    """本机所在的那些 /24(只有三段,历史形式)。
+
+    **新代码用 :func:`local_networks`** —— 这一支按地址猜 /24,而很多人的网
+    不是 /24。留着是因为老 UI 与几处调用点还按三段前缀在用。
+    """
     out: list[str] = []
     try:
         for info in socket.getaddrinfo(socket.gethostname(), None,
@@ -172,14 +267,14 @@ def local_subnets() -> list[str]:
 def discover(subnet: str, *,
              on_progress: Callable[[int, int, list[Device]], Any] | None = None,
              cancel: Callable[[], bool] | None = None,
-             hosts: int = HOSTS, pool: int = POOL) -> list[Device]:
+             hosts: int | None = None, pool: int = POOL) -> list[Device]:
     """扫一个 /24,返回完成了 SMB 协商的设备(疑似 ASIAIR 排在前面)。
 
     ``on_progress(done, total, so_far)`` 每探完一个地址调一次 —— 界面要能
     边扫边出结果,不能等六秒憋一屏。``cancel()`` 返回 True 时尽快收手。
     """
-    subnet = valid_subnet(subnet)
-    if not subnet:
+    net = parse_target(subnet)
+    if net is None:
         return []
     found: list[Device] = []
     done = 0
@@ -197,14 +292,17 @@ def discover(subnet: str, *,
         return Device(ip=ip, name=name, hostname=resolve_hostname(ip),
                       shares=shares, rtt_ms=rtt)
 
-    ips = [f"{subnet}.{i}" for i in range(1, hosts + 1)]
+    # `hosts` 是**上限**不是数量:给了三段前缀就是 254,给了 /22 就是 1022。
+    # 老调用方传 `hosts=8` 来只探八个,那条语义保留。
+    ips = target_hosts(net, limit=hosts)
+    total = len(ips)
     with cf.ThreadPoolExecutor(max_workers=pool) as ex:
         for res in ex.map(one, ips):
             done += 1
             if res is not None:
                 found.append(res)
             if on_progress is not None:
-                on_progress(done, hosts, sort_devices(list(found)))
+                on_progress(done, total, sort_devices(list(found)))
             if cancel is not None and cancel():
                 break
     return sort_devices(found)
@@ -240,6 +338,41 @@ def preferred_subnets() -> list[str]:
     return [sub for _score, sub in sorted(ranked)]
 
 
+
+def preferred_networks() -> list[str]:
+    """本机的网络(带前缀长度),**按"最可能是真局域网"排序**。
+
+    与 :func:`preferred_subnets` 同一套打分,外加一条:**只有一两个地址的
+    网段排到最后**。实测一台开着 VPN 的机器会报出 `198.18.0.0/30` 与
+    `100.65.0.8/32` —— 那是隧道端点,里面不可能有 ASIAIR,而它们恰好
+    因为"地址少"扫得飞快,一不留神就排到了前面。
+    """
+    ranked: list[tuple[int, int, str]] = []
+    for cidr in local_networks():
+        net = parse_target(cidr)
+        if net is None:
+            continue
+        octs = str(net.network_address).split(".")
+        a, b = int(octs[0]), int(octs[1])
+        if octs[0] == "192" and octs[1] == "168":
+            score = 0                       # 最常见的家用段
+        elif a == 10:
+            score = 1
+        elif a == 172 and 16 <= b <= 31:
+            score = 2
+        elif a == 100 and 64 <= b <= 127:
+            score = 8                       # 运营商级 NAT,几乎不会是自家设备
+        elif a == 198 and b in (18, 19):
+            score = 9                       # 基准测试保留段,常被 VPN 占用
+        else:
+            score = 5
+        if net.prefixlen >= 30:
+            score += 10                     # 点对点隧道,不是局域网
+        # 同分时先扫小的:/24 比 /16 快得多,而设备多半就在那个 /24 里
+        ranked.append((score, -net.prefixlen, net.with_prefixlen))
+    return [c for _s, _p, c in sorted(ranked)]
+
+
 def discover_all(subnets: Sequence[str] | None = None, *,
                  stop_on_asiair: bool = True, **kw) -> list[Device]:
     """本机所在的每个 /24 都扫一遍(按 `preferred_subnets` 的先后)。
@@ -249,8 +382,10 @@ def discover_all(subnets: Sequence[str] | None = None, *,
     二十几秒去确认那里什么也没有。要完整清单的场合(扫描页)传 False。
     """
     out: list[Device] = []
+    # **按网络扫,不是按猜出来的 /24 扫。** 网卡是 /22 的机器上,
+    # 按 /24 扫只覆盖了四分之一 —— 而界面上看起来是「这里没有设备」。
     for sub in (subnets if subnets is not None
-                else preferred_subnets()):
+                else preferred_networks()):
         got = discover(sub, **kw)
         out += got
         if stop_on_asiair and any(d.is_asiair for d in got):

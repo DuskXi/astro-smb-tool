@@ -240,17 +240,28 @@ class TestSubnetValidation:
         for bad in ("nope", "", "1.2", "1.2.3.4", "999.1.1", "a.b.c"):
             assert sv.valid_subnet(bad) == "", bad
 
-    def test_the_page_uses_it_and_says_so(self):
+    def test_the_page_validates_and_says_so(self):
+        """校验换成了 `netscan.parse_target` —— 它连 CIDR 一起认
+        (`192.0.2.0/22`),而 `valid_subnet` 只认三段前缀。
+
+        **行为覆盖在 `test_scan_subnet_picker.py`**:那边真建一个页面、
+        真填 `nope`、真点开始,然后看有没有那句提示。这里只钉住"还在校验"。
+        """
         src = _src(SCAN, "toggle")
-        assert "sv.valid_subnet(" in src, "只判空 —— 输入 `nope` 毫无反馈"
-        assert "网段格式" in src
+        assert "parse_target(" in src, "只判空 —— 输入 `nope` 毫无反馈"
+        assert "网段认不出来" in src
 
 
 class TestStopWording:
     """清单外:按了停止,界面说"扫描完成"。"""
 
     def test_stop_sets_the_flag(self):
-        src = _src(SCAN, "toggle")
+        """停止那几步搬进 `_stop()` 了 —— `toggle` 现在只是转调它。
+
+        搬家的原因是那个共享取消标志的 bug(换网段就卡),
+        见 `test_scan_subnet_picker.TestSwitchingSubnetsDoesNotWedge`。
+        """
+        src = _src(SCAN, "_stop")
         assert "self._stopped = True" in src
 
     def test_a_new_scan_clears_it(self):

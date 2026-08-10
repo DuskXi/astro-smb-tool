@@ -144,20 +144,23 @@ class TestItDoesNotScanEveryVirtualAdapter:
 
         def fake(sub, **kw):
             seen.append(sub)
-            return [_dev(f"{sub}.3", asiair=True)] if sub == "192.168.1" else []
+            return ([_dev("192.0.2.3", asiair=True)]
+                    if sub == "192.0.2.0/24" else [])
 
-        monkeypatch.setattr(N, "local_subnets", lambda: ["192.168.1", "10.9.9"])
+        monkeypatch.setattr(N, "local_networks",
+                            lambda: ["192.0.2.0/24", "198.51.100.0/24"])
         monkeypatch.setattr(N, "discover", fake)
         N.discover_all()
-        assert seen == ["192.168.1"], f"找到了还继续扫: {seen}"
+        assert seen == ["192.0.2.0/24"], f"找到了还继续扫: {seen}"
 
     def test_it_keeps_going_when_nothing_is_found(self, monkeypatch):
         seen: list[str] = []
-        monkeypatch.setattr(N, "local_subnets", lambda: ["192.168.1", "10.9.9"])
+        monkeypatch.setattr(N, "local_networks",
+                            lambda: ["192.0.2.0/24", "198.51.100.0/24"])
         monkeypatch.setattr(N, "discover",
                             lambda sub, **kw: seen.append(sub) or [])
         N.discover_all()
-        assert seen == ["192.168.1", "10.9.9"]
+        assert seen == ["192.0.2.0/24", "198.51.100.0/24"]
 
     def test_the_scan_page_asks_for_the_full_list(self):
         """扫描页要的是完整清单,不能提前收手。"""
@@ -200,3 +203,68 @@ class TestTheViewLayerStillWorks:
         row = D.to_rows([_dev("192.0.2.3", asiair=True, name="ASIAIR")])[0]
         for field in ("ip", "title", "asiair", "shares", "sub"):
             assert field in row, field
+
+
+class TestItScansTheWholeNetworkNotAGuessed24:
+    """**很多人的网不是 /24。**
+
+    以前全项目都假设"本机在一个 /24 里"(`socket.getaddrinfo` 只给地址,
+    给不了掩码)。网卡是 /22 的机器上,按 /24 扫**只覆盖了四分之一** ——
+    而界面上看起来是「这一段里没有设备」,不是「我只扫了一部分」。
+    """
+
+    def test_cidr_is_accepted(self):
+        assert N.parse_target("192.0.2.0/22") is not None
+        assert len(N.target_hosts(N.parse_target("192.0.2.0/22"))) == 1022
+
+    def test_the_old_three_octet_form_still_works(self):
+        """老写法等价于 /24 —— 界面上、设备记录里到处是它。"""
+        net = N.parse_target("192.168.1")
+        assert net is not None and net.prefixlen == 24
+        assert len(N.target_hosts(net)) == 254
+
+    def test_a_host_address_with_a_prefix_snaps_to_its_network(self):
+        """用户多半直接抄自己那台机的地址,不会先算网络地址。"""
+        assert str(N.parse_target("192.0.2.5/22")) == "192.0.0.0/22"
+
+    def test_garbage_is_rejected_not_guessed(self):
+        for bad in ("", "nope", "192.168", "192.0.2.0/33", "999.1.1.1/24"):
+            assert N.parse_target(bad) is None, bad
+
+    def test_a_huge_range_is_capped_and_says_so(self):
+        """`/16` 是 65534 次探测 —— 按 64 并发算七分钟,界面上只显示
+        「正在探测」,看起来就是卡死。截断,并**如实说**截了。"""
+        net = N.parse_target("198.18.0.0/16")
+        assert len(N.target_hosts(net)) == N.MAX_HOSTS
+        line = N.describe_target("198.18.0.0/16")
+        assert "65534" in line and str(N.MAX_HOSTS) in line
+
+    def test_discover_reports_the_real_total(self, monkeypatch):
+        """进度条的分母得是**这次真要探的个数**,不是写死的 254。"""
+        monkeypatch.setattr(N, "probe", lambda ip, **kw: (False, None))
+        seen = []
+        N.discover("192.0.2.0/22", pool=8,
+                   on_progress=lambda d, t, rows: seen.append(t),
+                   cancel=lambda: len(seen) >= 5)
+        assert seen and set(seen) == {1022}, seen
+
+    def test_tunnel_endpoints_rank_last(self, monkeypatch):
+        """`/30`、`/32` 是 VPN 隧道端点,里面不可能有 ASIAIR ——
+        而它们恰好因为地址少而扫得飞快,不压后就会排到前面去。"""
+        # 打分按 RFC1918 前缀分档,输入必须是真的私网段,换成文档网段
+        # 这条就测不到东西了。
+        home = "192.168.2.0/24"   # publish-scan: ok(判据要的就是真私网段)
+        nets = ["198.18.0.0/30", "100.65.0.8/32", home, "172.29.16.0/20"]
+        monkeypatch.setattr(N, "local_networks", lambda: nets)
+        got = N.preferred_networks()
+        assert got[0] == home, got
+        assert got[-2:] == ["100.65.0.8/32", "198.18.0.0/30"], got
+
+    def test_local_networks_falls_back_when_enumeration_fails(self, monkeypatch):
+        """枚举网卡失败(平台不支持 / 权限)不该让扫描页打不开 ——
+        退回按地址猜的 /24,猜错的后果是扫漏,不是崩。"""
+        from astro_smb import netifaces
+
+        monkeypatch.setattr(netifaces, "local_networks", lambda: [])
+        monkeypatch.setattr(N, "local_subnets", lambda: ["192.0.2"])
+        assert N.local_networks() == ["192.0.2.0/24"]
