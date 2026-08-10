@@ -1980,7 +1980,11 @@ class SideNav(QWidget):
         head.addWidget(name)
         head.addStretch(1)
         col.addLayout(head)
-        col.addWidget(label(_("天文摄影 SMB 工具箱"), role="subtitle"))
+        # **要能折行。** 侧栏是定宽 188px,而这句话翻成英文比中文长得多 ——
+        # 实测截成了 "SMB toolbox for astrophotogra"。中文下看不出来,
+        # 换语言才现形,而那时它只是**少了几个字母**,不报错。
+        col.addWidget(label(_("天文摄影 SMB 工具箱"), role="subtitle",
+                            wrap=True))
         col.addSpacing(theme.Space.SM)
 
         self._buttons: dict[str, QPushButton] = {}

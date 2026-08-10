@@ -126,6 +126,12 @@ def parse_po(text: str) -> dict[str, str]:
 
 def build_mo(pairs: dict[str, str]) -> bytes:
     entries = dict(pairs)
+    # **覆盖率写进头。** 运行时要能说出「这个语言只翻了 4%」——
+    # 不说的话,用户切到英文看见满屏中文,只会以为切换坏了。
+    # 写在头里而不是运行时数:`.mo` 里根本没有未翻译的条目,
+    # 运行时数不出分母。
+    total = len([k for k in pairs if k])
+    done = len([k for k, v in pairs.items() if k and v])
     # **头优先用 `.po` 自带的那一份** —— 各语言的 `Plural-Forms` 不一样,
     # 拿一份写死的头盖掉它,俄语/阿拉伯语的复数就全取错形式,而且不报错。
     if not entries.get(""):
@@ -133,6 +139,8 @@ def build_mo(pairs: dict[str, str]) -> bytes:
     elif "Plural-Forms" not in entries[""]:
         entries[""] = (entries[""].rstrip("\n")
                        + f"\nPlural-Forms: {DEFAULT_PLURAL}\n")
+    entries[""] = (entries[""].rstrip("\n")
+                   + f"\nX-Translated: {done}\nX-Total: {total}\n")
     # 空翻译不进 .mo —— gettext 会把它当"翻译成空串",界面上直接变成一片空白
     entries = {k: v for k, v in entries.items() if v or k == ""}
     keys = sorted(entries)

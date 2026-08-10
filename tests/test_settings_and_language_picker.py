@@ -283,3 +283,80 @@ class TestTheSwitcherActuallyRuns:
         want = langs.index(cur) if cur in langs else 0
         assert shell.lang_combo.idx == want, (
             "取消之后下拉没拨回来 —— 它显示的语言和实际的对不上")
+
+
+class TestTranslatedLabelsStillFit:
+    """**翻译会把控件撑爆,而症状是少了几个字母。**
+
+    切到英文之后实测两处:侧栏副标题截成 `SMB toolbox for astrophotogra`,
+    三个配色按钮里 `Normal` 截成 `lorma`。中文下永远看不出来 —— 中文两个字
+    的地方英文要六到八个字母,而侧栏是定宽 188px。
+
+    不报错、不崩、不空白,**只是少了几个字母**,而少掉的那几个恰好是词尾。
+    """
+
+    @pytest.fixture(scope="module")
+    def qt_app(self):
+        pytest.importorskip("PySide6")
+        from PySide6.QtWidgets import QApplication
+
+        from astro_smb_qt import theme
+
+        inst = QApplication.instance() or QApplication([])
+        theme.apply(inst)
+        return inst
+
+    #: 单个配色按钮的文字上限(字符)。
+    #:
+    #: **这个数是量出来的,不是拍的**:`Normal`(6)在 188px 的侧栏里被截成
+    #: `lorma`,而 `Light`/`Dark`/`Red`(5/4/3)整整齐齐。所以上限取 5。
+    MODE_LABEL_MAX = 5
+
+    def test_the_three_theme_buttons_fit_the_sidebar(self, qt_app):
+        """三个配色按钮挤在侧栏一行里,**每种语言都得放得下**。
+
+        **按字符数判,不按像素。** 试过两种像素量法,都不稳:`sizeHint()`
+        取决于控件当下解析到的字体(单独跑 164px、全量跑 230px,别的测试
+        动过应用级样式);`QFontMetrics(QFont())` 又不是界面真正在用的那个
+        字体族。**在测试里,绝对像素是个不可靠的量。**
+
+        字符数粗,但它稳定、可复现,而且抓得住真正出过事的那一个。
+        """
+        from astro_smb import i18n
+        from astro_smb_qt import theme
+
+        old = i18n.current_language()
+        try:
+            for lang in i18n.available_languages():
+                if lang == i18n.SOURCE_LANGUAGE:
+                    continue          # 中文两个字,永远放得下
+                i18n.set_language(lang)
+                for mode in theme.MODES:
+                    text = i18n.gettext(theme.MODE_LABEL[mode])
+                    assert len(text) <= self.MODE_LABEL_MAX, (
+                        f"{lang} 的「{theme.MODE_LABEL[mode]}」翻成 {text!r}"
+                        f"({len(text)} 字符),侧栏是定宽的放不下 —— "
+                        "会被截掉尾巴(实测 Normal 截成 lorma)")
+        finally:
+            i18n.set_language(old)
+
+    def test_the_sidebar_subtitle_can_wrap(self):
+        """放不下就折行,别默默截断。"""
+        import ast
+        from pathlib import Path
+
+        src = (Path(__file__).resolve().parents[1] / "astro_smb_qt"
+               / "widgets.py").read_text(encoding="utf-8")
+        tree = ast.parse(src)
+        found = False
+        for node in ast.walk(tree):
+            if (isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Name)
+                    and node.func.id == "label"
+                    and node.args
+                    and "天文摄影" in ast.unparse(node.args[0])):
+                found = True
+                assert any(k.arg == "wrap" and k.value.value is True
+                           for k in node.keywords), (
+                    "侧栏副标题不能折行 —— 英文比中文长,会被截掉尾巴")
+        assert found, "找不到侧栏副标题,断言在空转"

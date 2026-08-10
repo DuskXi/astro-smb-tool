@@ -36,14 +36,18 @@ from pathlib import Path
 
 from PyInstaller.utils.hooks import collect_data_files
 
-#: mac 上把 universal2 的胖二进制**瘦成本机这一个架构**。
+#: mac 的目标架构。
 #:
-#: PySide6 的 mac 轮子是 universal2 —— 一份文件里同时装着 x86_64 与 arm64。
-#: 不瘦的话打出来的包里有一整套**永远不会被执行**的另一架构代码:x86 Mac
-#: 上实测 1023 MB,而同一套东西在 Linux(单架构轮子)是 870 MB。
+#: **加这个没能把包变小 —— 那条推断是错的,记在这儿免得有人再试一遍。**
+#: 原以为 PySide6 的 mac 轮子是 universal2(一份文件里 x86_64 + arm64 都有),
+#: 给了 `target_arch` PyInstaller 就会 `lipo -thin` 掉一半。实测:x86 Mac 上
+#: 加之前 1023 MB,加之后**还是 1023 MB**。回看构建日志,`EXE target arch:
+#: x86_64` 在**两次里都有** —— PyInstaller 本来就按当前架构走了,这个参数
+#: 对它是个空操作。真正的大头在哪儿还没查清(QtWebEngine 一个人就两百多兆)。
 #:
-#: 给了 `target_arch`,PyInstaller 会对收集到的每个二进制走一遍 `lipo -thin`。
-#: 某个依赖缺目标架构时它会**当场报错**,不会悄悄打出一个跑不起来的包。
+#: 显式写着仍然有意义:换台 arm64 mac 打包时它是 arm64,不会因为环境里
+#: 混进什么而打错架构。某个依赖缺目标架构时 PyInstaller 会当场报错,
+#: 不会悄悄打出一个跑不起来的包。
 _TARGET_ARCH = None
 if sys.platform == "darwin":
     _TARGET_ARCH = "arm64" if platform.machine() == "arm64" else "x86_64"

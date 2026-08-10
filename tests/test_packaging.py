@@ -187,15 +187,13 @@ class TestTheFrozenBundleSpec:
         assert '"win32more"' in src, (
             "win32more 没被 exclude —— 它会把另一套前端的绑定拖进包里")
 
-    def test_mac_thins_the_universal_binaries(self):
-        """**mac 上不瘦身就白背一整套另一架构的代码。**
+    def test_mac_targets_the_running_architecture(self):
+        """mac 的目标架构要跟着运行架构走,不能写死。
 
-        PySide6 的 mac 轮子是 universal2(一份文件里 x86_64 + arm64 都有)。
-        x86 Mac 上实测打出来 1023 MB,而同一套东西在 Linux(单架构轮子)
-        是 870 MB —— 差的那一百多兆是**永远不会被执行**的另一架构。
-
-        判据是"规格里按运行架构设了 `target_arch`",不是某个字面值 ——
-        arm64 机器上它得是 arm64。
+        **注意这条不保证包会变小。** 当初加 `target_arch` 是以为能把
+        universal2 的胖二进制 `lipo -thin` 掉一半 —— 实测前后都是 1023 MB,
+        那条推断是错的(PyInstaller 本来就按当前架构走)。留着是为了
+        "换台 arm64 mac 打包时不会打错架构"。
         """
         src = self.SPEC.read_text(encoding="utf-8")
         assert "target_arch=_TARGET_ARCH" in src, "没给 target_arch,胖二进制原样打进去"

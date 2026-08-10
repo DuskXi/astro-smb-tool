@@ -273,20 +273,41 @@ class Shell(QMainWindow):
                   "en_US": "English", "ja_JP": "日本語", "de_DE": "Deutsch",
                   "fr_FR": "Français", "es_ES": "Español", "ru_RU": "Русский"}
 
+    #: 低于这个覆盖率的语言不进下拉 —— 切过去等于什么都没发生
+    MIN_COVERAGE = 0.02
+
+    def _lang_label(self, code: str) -> str:
+        """下拉里那一行字。**没翻完的要把进度写出来。**
+
+        用户报的:切到英文之后满屏还是中文,以为切换坏了。其实没坏 ——
+        英文那份当时只翻了 0.6%,gettext 找不到译文就回落到 msgid,
+        而 msgid 就是中文。**这是设计如此的兜底**(总比一片空白强),
+        但把一个 0.6% 的语言摆进下拉、还不说一声,就是误导。
+        """
+        name = self.LANG_NAMES.get(code, code)
+        pct = i18n.coverage(code)
+        if pct >= 0.995:
+            return name
+        return _("{name}(已翻 {pct:.0f}%)").format(name=name, pct=pct * 100)
+
     def _build_language_picker(self) -> None:
         """语言下拉。**只在装了不止一种语言时才出现。**
 
         只有中文可选时摆一个一项的下拉是纯噪声 —— 而这恰恰是绝大多数用户
         看到的情况(源语言就是中文,不需要任何 `.mo`)。
+
+        几乎没翻的语言直接不列(见 :attr:`MIN_COVERAGE`):列出来只会让人
+        切过去、发现毫无变化、再切回来。
         """
-        langs = i18n.available_languages()
+        cur = i18n.current_language()
+        langs = [k for k in i18n.available_languages()
+                 if k == cur or i18n.coverage(k) >= self.MIN_COVERAGE]
         if len(langs) < 2:
             return
         self.nav.status.addWidget(W.group_title(_("语言")))
         self._langs = langs
-        cur = i18n.current_language()
         idx = langs.index(cur) if cur in langs else 0
-        self.lang_combo = W.combo([self.LANG_NAMES.get(k, k) for k in langs],
+        self.lang_combo = W.combo([self._lang_label(k) for k in langs],
                                   index=idx, on_change=self._set_language)
         self.nav.status.addWidget(self.lang_combo)
 

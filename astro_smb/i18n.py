@@ -71,6 +71,33 @@ def available_languages() -> list[str]:
     return sorted(langs)
 
 
+def coverage(lang: str) -> float:
+    """`lang` 翻了多少(0.0~1.0)。源语言恒为 1.0,读不出来返回 0.0。
+
+    数字是 `scripts/i18n_build.py` 在编 `.mo` 时写进头里的
+    (`X-Translated` / `X-Total`)。**运行时数不出来** —— `.mo` 里
+    根本没有未翻译的条目,分母无从谈起。
+
+    界面要用它:提供一个只翻了 4% 的语言而不说,用户切过去看见满屏
+    中文,只会以为切换坏了。
+    """
+    if lang == SOURCE_LANGUAGE:
+        return 1.0
+    try:
+        with _lock:
+            tr = _others.get(lang)
+            if tr is None:
+                tr = _gettext.translation(DOMAIN, localedir=str(LOCALE_DIR),
+                                          languages=[lang])
+                _others[lang] = tr
+        info = tr.info()
+        done = int(info.get("x-translated", 0))
+        total = int(info.get("x-total", 0))
+    except (OSError, ValueError, AttributeError, KeyError):
+        return 0.0
+    return (done / total) if total else 0.0
+
+
 def current_language() -> str:
     return _current
 
