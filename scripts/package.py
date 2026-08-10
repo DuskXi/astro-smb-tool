@@ -13,7 +13,15 @@ PyInstaller 把**当前正在跑的那个解释器**连同它已装好的原生�
 * Windows 上打不出 Linux 包,反之亦然;
 * mac 的 x86_64 与 arm64 也**各打各的** —— 想要一个 universal2 单包,得让
   链路上每一个原生轮子都是 universal2,而 numpy / pillow / cffi 都只发
-  分架构的轮子(2026-08 实测)。PySide6 自己倒是 universal2。
+  分架构的轮子(2026-08 实测)。
+
+## 体积
+
+实测 win-x64 505 MB,其中 PySide6 一家 437 MB(`Qt6WebEngineCore` 就 195 MB)。
+规格里裁掉了 Chromium 开发者工具资源与用不到的语言包,约 130 MB。
+**报体积用 `bundle_size()`,别用 `stat()`** —— 后者跟随符号链接,而 macOS 的
+`.framework` 全靠符号链接搭起来,会把每个 Qt 库数两遍(实测虚报到 1023 MB,
+`du -sh` 说 439 MB)。
 
 结论:三平台四个架构靠 **CI 上四台原生机器**出,不靠交叉编译。
 对应关系在 `.github/workflows/release.yml`。
@@ -102,7 +110,10 @@ def smoke() -> int:
         dev = Path(tmp) / "EMMC Images"
         (dev / "log").mkdir(parents=True)
         (dev / "Autorun").mkdir()
-        argv = [str(exe), "--host", str(dev), "--seconds", "4"]
+        # **开在天球页。** 那一页是唯一用 QtWebEngine 的,而规格里裁掉了
+        # 一百多兆的 Chromium 资源 —— 裁过头的表现是**那一页空白**,
+        # 控制台一个字都不说。开在浏览页的话这条路一次都走不到。
+        argv = [str(exe), "--host", str(dev), "--page", "sky", "--seconds", "6"]
         print("$", " ".join(argv), flush=True)
         p = subprocess.run(argv, env=env, cwd=tmp)
     if p.returncode != 0:
@@ -110,6 +121,37 @@ def smoke() -> int:
         return p.returncode
     print("冒烟通过:自检过了,窗口起得来,四秒后自己退了")
     return 0
+
+def bundle_size(root: Path) -> tuple[int, list[tuple[str, int]]]:
+    """包的**真实**占用,外加最大的几项。
+
+    **不跟随符号链接,而且按 inode 去重。** 上一版用的是
+    ``f.stat().st_size``,而 `stat()` 是跟随链接的 —— macOS 的 `.framework`
+    整个就是靠符号链接搭起来的(``QtCore.framework/QtCore`` →
+    ``Versions/A/QtCore``,``Versions/Current`` → ``A``),于是每个 Qt 库被
+    数了两遍甚至三遍。
+
+    报出来的数因此是 **1023 MB,而 `du -sh` 说 439 MB** —— 我拿着那个虚高的
+    数字追了三轮"包怎么这么大",还据此推断出一条错误的 universal2 结论。
+    压缩包里符号链接就是链接,不占空间;`du` 是对的,我错了。
+    """
+    total = 0
+    seen: set[tuple[int, int]] = set()
+    per_top: dict[str, int] = {}
+    for f in root.rglob("*"):
+        if f.is_symlink() or not f.is_file():
+            continue
+        st = f.lstat()
+        key = (st.st_dev, st.st_ino)
+        if st.st_ino and key in seen:
+            continue                    # 硬链接:同一份数据,只算一次
+        seen.add(key)
+        total += st.st_size
+        rel = f.relative_to(root).parts
+        head = rel[1] if len(rel) > 1 and rel[0] == "_internal" else rel[0]
+        per_top[head] = per_top.get(head, 0) + st.st_size
+    top = sorted(per_top.items(), key=lambda kv: -kv[1])[:5]
+    return total, top
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -127,9 +169,11 @@ def main(argv: list[str] | None = None) -> int:
         build()
 
     exe = exe_path()
-    size = sum(f.stat().st_size for f in OUT.rglob("*") if f.is_file())
+    size, top = bundle_size(OUT)
     print(f"\n目标平台: {rid()}")
     print(f"产物:     {OUT}  ({size / 1048576:.0f} MB)")
+    for name, n in top:
+        print(f"            {n / 1048576:7.0f} MB  {name}")
     print(f"启动:     {exe}")
 
     if args.smoke or args.smoke_only:

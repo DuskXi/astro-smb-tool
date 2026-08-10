@@ -258,3 +258,45 @@ class TestTheUiFontIsNotHardcodedToOnePlatform:
 
         monkeypatch.setattr(_sys, "platform", "darwin")
         assert '"PingFang SC"' in theme.ui_family()
+
+
+class TestTheBundleIsNotFullOfThingsNobodyUses:
+    """打包体积:量出来再删,而且删完要真开一次。"""
+
+    SPEC = ROOT / "packaging" / "astro-smb-tool.spec"
+
+    def test_it_trims_the_chromium_devtools_resources(self):
+        """**72 MB 的 Chromium 开发者工具资源不该进包。**
+
+        实测(win-x64)裁剪前 505 MB,裁掉 DevTools 资源与用不到的语言包
+        之后 372 MB —— 四分之一。没人会在天球页上开 Chrome DevTools,
+        而我们只发中文和英文两种界面语言。
+
+        真正的护栏是 `package.py --smoke` **开在天球页**:裁过头的表现是
+        那一页空白、控制台一个字不说,只有真开一次才看得出来。
+        这里钉的是"裁剪逻辑还在,而且没把该留的一起裁了"。
+        """
+        src = self.SPEC.read_text(encoding="utf-8")
+        assert "qtwebengine_devtools_resources" in src, "DevTools 资源又打进去了"
+        assert "KEEP_LOCALES" in src, "语言包裁剪没了"
+        for keep in ("zh-CN", "en-US"):
+            assert keep in src, f"{keep} 不在保留名单里 —— WebEngine 会缺语言"
+
+    def test_the_smoke_test_opens_the_page_that_uses_webengine(self):
+        """裁剪只影响 QtWebEngine,而九页里只有天球用它。
+        冒烟开在别的页 = 这条裁剪一次都没被验过。"""
+        src = (ROOT / "scripts" / "package.py").read_text(encoding="utf-8")
+        assert '"--page", "sky"' in src, (
+            "冒烟没开天球页 —— Chromium 资源裁过头的话没人会发现")
+
+    def test_the_size_report_does_not_follow_symlinks(self):
+        """**报体积不能用 `stat()`** —— 它跟随符号链接,而 macOS 的
+        `.framework` 全靠符号链接搭起来,每个 Qt 库会被数两遍。
+
+        实测虚报到 1023 MB,`du -sh` 说 439 MB。我拿着那个虚高的数字追了
+        三轮「包怎么这么大」,还据此推断出一条错误的 universal2 结论。
+        """
+        src = (ROOT / "scripts" / "package.py").read_text(encoding="utf-8")
+        assert "def bundle_size" in src
+        assert "is_symlink()" in src, "又会把符号链接算进去了"
+        assert "lstat()" in src, "用了会跟随链接的 stat()"

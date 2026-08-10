@@ -113,6 +113,52 @@ a = Analysis(                                                    # noqa: F821
     excludes=excludes,
     noarchive=False,
 )
+# ------------------------------------------------------------------ 瘦身
+#
+# **量出来再删,别猜。** 实测(win-x64)PySide6 占 437 MB / 全包 505 MB,
+# 其中前三名:
+#
+#     195 MB  Qt6WebEngineCore.dll          ← 天球页要它,动不了
+#      72 MB  qtwebengine_devtools_resources.debug.pak
+#      51 MB  translations/                 ← Qt 自己的 ~50 种语言
+#
+# 后两样是**纯浪费**:没人会在天球页上开 Chrome 开发者工具,而我们只发
+# 中文和英文两种界面语言。删掉约 130 MB,占全包四分之一。
+#
+# **删完必须真开一次天球页** —— 少一个 `.pak`,WebEngine 的表现是那一页
+# 空白,控制台一个字都不说(`--smoke` 里那次窗口启动覆盖不到它)。
+
+#: 我们发的界面语言。Qt 自己的 `.qm` 与 WebEngine 的 locale `.pak` 只留这些。
+KEEP_LOCALES = ("en", "en-US", "en_US", "zh", "zh-CN", "zh_CN")
+
+
+def _drop(dest: str) -> bool:
+    """这份随包数据要不要扔掉。``dest`` 是它在包里的相对路径。"""
+    p = dest.replace("\\", "/")
+    name = p.rsplit("/", 1)[-1]
+
+    # Chromium 开发者工具的资源。**`.debug.pak` 一个就 72 MB。**
+    if name.startswith("qtwebengine_devtools_resources"):
+        return True
+
+    # WebEngine 的界面语言包(`qtwebengine_locales/xx.pak`)
+    if "qtwebengine_locales/" in p and name.endswith(".pak"):
+        return name[:-4] not in KEEP_LOCALES
+
+    # Qt 自己的翻译(`translations/qtbase_de.qm` 之类)
+    if "/translations/" in f"/{p}" and name.endswith(".qm"):
+        stem = name[:-3]
+        lang = stem.split("_", 1)[1] if "_" in stem else stem
+        return lang not in KEEP_LOCALES
+
+    return False
+
+
+_before = len(a.datas)                                          # noqa: F821
+a.datas = [t for t in a.datas if not _drop(t[0])]               # noqa: F821
+print(f"[spec] 随包数据裁掉 {_before - len(a.datas)} 项"          # noqa: F821
+      f"(DevTools 资源 + 用不到的语言包)")
+
 pyz = PYZ(a.pure)                                                # noqa: F821
 
 exe = EXE(                                                       # noqa: F821
