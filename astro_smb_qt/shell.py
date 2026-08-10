@@ -449,6 +449,17 @@ class Shell(QMainWindow):
 
     # ------------------------------------------------------------ 提示
 
+    def confirm(self, title: str, message: str, *,
+                ok_text: str | None = None,
+                cancel_text: str | None = None) -> bool:
+        """见 :func:`astro_smb_qt.widgets.confirm`。
+
+        **原来 Shell 上没有这个方法**,而 `_set_language` 里就写着
+        `self.confirm(...)` —— 语言切换点一下直接 `AttributeError`。
+        """
+        return W.confirm(self, title, message, ok_text=ok_text,
+                         cancel_text=cancel_text)
+
     def notice(self, text: str, tone: str = "warn") -> None:
         self.banner.show_notice(text, tone)
 

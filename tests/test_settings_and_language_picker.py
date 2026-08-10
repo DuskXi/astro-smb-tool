@@ -208,3 +208,78 @@ class TestTheSwitchDialogIsBilingual:
         i18n.set_language("zh_CN")
         got = i18n.gettext_in("en", "取消")
         assert got != "取消", "拿不到英文 —— 双语框会退化成一种语言"
+
+
+class TestTheSwitcherActuallyRuns:
+    """**上面那些断言的是那个框里写什么字,没有一条真去点它。**
+
+    于是 `Shell._set_language` 里那句 `self.confirm(...)` 一直是
+    `AttributeError` —— `confirm` 只长在 `Page` 上,`Shell` 上根本没有。
+    语言切换是**点一下就崩**,而 i18n 那一整轮的测试全是绿的。
+
+    是用户在 Mac 上点了一下才发现的。这几条走真调用。
+    """
+
+    @pytest.fixture(scope="module")
+    def qt_app(self):
+        pytest.importorskip("PySide6")
+        from PySide6.QtWidgets import QApplication
+
+        from astro_smb_qt import theme
+
+        inst = QApplication.instance() or QApplication([])
+        theme.apply(inst)
+        return inst
+
+    def test_shell_can_confirm(self, qt_app):
+        """`Shell` 得真有这个方法 —— 不是 `Page` 有就行。"""
+        from astro_smb_qt.shell import Shell
+
+        assert callable(getattr(Shell, "confirm", None)), (
+            "Shell 没有 confirm,而 _set_language 里就在调它")
+
+    def test_declining_the_restart_puts_the_dropdown_back(self, qt_app,
+                                                          monkeypatch):
+        """**真走一遍 `_set_language`。**
+
+        用户点「取消」时下拉要拨回当前语言,否则它显示的语言和实际的对不上。
+        这条同时也是"这个函数根本跑不跑得起来"的守卫。
+        """
+        from astro_smb import i18n
+        from astro_smb_qt.shell import Shell
+
+        langs = i18n.available_languages()
+        if len(langs) < 2:
+            pytest.skip("只装了一种语言,没有下拉可拨")
+
+        shell = Shell.__new__(Shell)         # 不建整个窗口
+        shell._langs = list(langs)
+        asked = {}
+
+        class _Combo:
+            def __init__(self):
+                self.idx = 0
+
+            def blockSignals(self, _b):
+                pass
+
+            def setCurrentIndex(self, i):
+                self.idx = i
+
+        shell.lang_combo = _Combo()
+        shell.transfers = None
+        monkeypatch.setattr(Shell, "confirm",
+                            lambda self, *a, **k: asked.setdefault("hit", True) and False)
+        restarted = []
+        monkeypatch.setattr(Shell, "_restart", lambda self: restarted.append(1))
+
+        target = next(i for i, k in enumerate(langs)
+                      if k != i18n.current_language())
+        Shell._set_language(shell, target)
+
+        assert asked.get("hit"), "根本没弹确认框"
+        assert not restarted, "用户点了取消,却还是重启了"
+        cur = i18n.current_language()
+        want = langs.index(cur) if cur in langs else 0
+        assert shell.lang_combo.idx == want, (
+            "取消之后下拉没拨回来 —— 它显示的语言和实际的对不上")

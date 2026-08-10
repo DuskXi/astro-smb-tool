@@ -167,14 +167,20 @@ class TestDeleteConfirm:
         body = _body(BROWSER, "_delete")
         assert "不可恢复" in body
 
-    def test_confirm_defaults_to_cancel(self):
-        body = _body(BASE, "confirm")
-        assert "setDefaultButton(cancel)" in body
+    def test_confirm_is_one_implementation(self):
+        """`Page.confirm` 与 `Shell.confirm` 必须转调同一份。
 
-    def test_confirm_buttons_are_role_tagged(self):
-        """按角色登记,否则 Esc / 窗口关闭的语义是未定义的。"""
-        body = _body(BASE, "confirm")
-        assert "AcceptRole" in body and "RejectRole" in body
+        原来只有 `Page` 有它,而 `Shell._set_language` 里就写着
+        `self.confirm(...)` —— **语言切换点一下直接 AttributeError**。
+        复制第二份是更糟的修法:两边的默认按钮迟早不一样。
+
+        默认按钮与角色那两条判据由 `test_qt_skymap.py` 的
+        `test_confirm_defaults_to_cancel` 按行为验。
+        """
+        shell = (ROOT / "astro_smb_qt" / "shell.py").read_text(encoding="utf-8")
+        for name, src in (("base.py", BASE), ("shell.py", shell)):
+            body = _body(src, "confirm")
+            assert "W.confirm(" in body, f"{name} 里的 confirm 不是转调"
 
 
 class TestAnalyzeShortcut:

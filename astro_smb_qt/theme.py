@@ -264,7 +264,8 @@ class Font:
     #: `SF Pro` / `Cantarell` 这些拉丁字体里是没有的,得让它们接住。
     CJK_FALLBACK = ("Microsoft YaHei UI", "PingFang SC", "Hiragino Sans GB",
                     "Noto Sans CJK SC", "Source Han Sans SC", "WenQuanYi Micro Hei")
-    MONO = "Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace"
+    #: 等宽字体名单搬到模块级的 `_PLATFORM_MONO` 了 —— 它要按平台排序,
+    #: 而这个类只放尺寸。
 
 
 #: 各平台**公开的**界面字体名。`QFontDatabase` 在 mac 上给的是
@@ -276,6 +277,34 @@ _PLATFORM_UI = {
     "win32": ("Segoe UI",),
 }
 _PLATFORM_UI_DEFAULT = ("Cantarell", "Ubuntu", "DejaVu Sans")
+
+
+#: 等宽字体,**按平台排序**。
+#:
+#: 这里不问 `QFontDatabase.systemFont(FixedFont)` —— 它在 Windows 上答
+#: "Courier New",而我们要的是 Cascadia Mono。界面字体那一支问 Qt 是对的
+#: (系统界面字体就该跟系统走),等宽这一支是**审美选择**,该由我们定。
+#:
+#: 排序的目的和 `ui_family` 一样:让第一顺位在本平台**存在**。原来第一位
+#: 写死 `Cascadia Mono`,mac 上实测 `Populating font family aliases took
+#: 164 ms` —— 和 `Segoe UI` 一模一样的毛病,上一轮只改了界面字体、漏了这个。
+_PLATFORM_MONO = {
+    "darwin": ("SF Mono", "Menlo", "Monaco"),
+    "win32": ("Cascadia Mono", "Consolas"),
+}
+_PLATFORM_MONO_DEFAULT = ("DejaVu Sans Mono", "Liberation Mono", "Ubuntu Mono")
+
+
+def mono_family() -> str:
+    """等宽字体族。数字对齐要靠它(RMS、字节数、坐标那些列)。"""
+    import sys as _sys
+
+    names = list(_PLATFORM_MONO.get(_sys.platform, _PLATFORM_MONO_DEFAULT))
+    # 别的平台的也留在后面当兜底 —— 有人装了 Cascadia 到 mac 上也认
+    for group in (*_PLATFORM_MONO.values(), _PLATFORM_MONO_DEFAULT):
+        names += [n for n in group if n not in names]
+    names.append("monospace")
+    return ", ".join(f'"{n}"' if " " in n else n for n in names)
 
 
 def ui_family() -> str:
@@ -609,7 +638,7 @@ QLabel[role="metric_accent"] {{
     color: {c.ACCENT};
 }}
 QLabel[role="mono"] {{
-    font-family: {Font.MONO};
+    font-family: {mono_family()};
     font-size: {Font.SMALL}px;
     color: {c.TEXT};
 }}

@@ -86,26 +86,10 @@ class Page(QWidget):
     def confirm(self, title: str, message: str, *,
                 ok_text: str | None = None,
                 cancel_text: str | None = None) -> bool:
-        """二次确认。**破坏性动作与要花钱/花流量的动作都得走它。**
-
-        - 默认按钮是「取消」—— 一路回车不该把 8 MB 下载或一次删除点掉。
-        - 按钮文案**中文**且**说清楚要干什么**(「删除」而不是「确定」)。
-          `QMessageBox.question` 给的是英文 Yes/No,而"Yes"不告诉你 Yes 什么。
-        """
-        from PySide6.QtWidgets import QMessageBox
-
-        # **默认值不能写成 `ok_text=_("确定")`** —— 函数默认值是 `def` 执行时
-        # (也就是 import 时)求值的,和模块级常量一样会把翻译冻住。
-        ok_text = _("确定") if ok_text is None else ok_text
-        cancel_text = _("取消") if cancel_text is None else cancel_text
-        box = QMessageBox(self)
-        box.setWindowTitle(title)
-        box.setText(message)
-        ok = box.addButton(ok_text, QMessageBox.AcceptRole)
-        cancel = box.addButton(cancel_text, QMessageBox.RejectRole)
-        box.setDefaultButton(cancel)
-        box.exec()
-        return box.clickedButton() is ok
+        """见 :func:`astro_smb_qt.widgets.confirm`。**实现只有那一份** ——
+        Shell 也要用它(语言切换),而复制一份的结果就是两边慢慢不一样。"""
+        return W.confirm(self, title, message, ok_text=ok_text,
+                         cancel_text=cancel_text)
 
     def ask_text(self, title: str, label: str, *, text: str = "",
                  ok_text: str | None = None) -> str:

@@ -243,7 +243,12 @@ def render_altaz(lat_deg: float, lon_deg: float, unix_ts: float,
     rgba[..., :3] = np.clip(rgb, 0, 255).astype(np.uint8)
     rgba[..., 3] = np.where(mask, 255, 0).astype(np.uint8)
 
-    tmp = out.with_suffix(".part")
+    # **临时名要每次唯一。** 同一个 key 可能被两个工作线程同时算
+    # (拖时刻滑杆时 `Bg.run` 会连发好几个任务,它们跑在同一个
+    # `QThreadPool` 里)。共用一个 `.part` 的话两次 PNG 写入交错,
+    # 然后被原子地发布出去 —— 磁盘上就是一个**看起来正常、读起来
+    # `IDAT: CRC error`** 的缓存文件,而且一直留着。
+    tmp = out.with_name(f"{out.name}.{os.getpid()}.{threading.get_ident()}.part")
     try:
         Image.fromarray(rgba, "RGBA").save(tmp, format="PNG")
         os.replace(tmp, out)

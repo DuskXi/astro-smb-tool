@@ -93,15 +93,44 @@ class TestDownloadNeedsConsent:
             "用户点了取消,开关却还勾着 —— 下次点它反而变成关闭")
 
     def test_confirm_defaults_to_cancel(self):
-        base = (ROOT / "astro_smb_qt" / "pages" / "base.py").read_text(
-            encoding="utf-8")
-        at = base.index("def confirm")
-        body = base[at:base.index("\n    def ", at + 10)]
-        # 按钮改成了自建的中文按钮(老 UI 是「删除 / 取消」而不是英文 Yes/No),
-        # 所以默认项现在指向那个 cancel 按钮对象。
-        assert "setDefaultButton(cancel)" in body, (
-            "确认框默认按钮不是「取消」—— 一路回车会把下载/删除点掉")
-        assert "QMessageBox.RejectRole" in body, "取消按钮没登记成 Reject 角色"
+        """**默认按钮必须是「取消」** —— 一路回车不该把下载/删除点掉。
+
+        `confirm` 已经收成 `widgets.confirm` 一份实现(原来 `Shell` 上没有
+        它,而 `_set_language` 里就写着 `self.confirm(...)`,语言切换点一下
+        直接 `AttributeError`)。
+
+        **这里验行为不验源码。** 上一版查的是 `Page.confirm` 的源码文本里
+        有没有 `setDefaultButton(cancel)`,于是实现一挪走就红,而它盯的那件
+        事一点没变。现在真建一个框出来问它默认按钮是哪个。
+        """
+        pytest.importorskip("PySide6")
+        from PySide6.QtWidgets import QApplication, QMessageBox
+
+        from astro_smb_qt import widgets as W
+
+        QApplication.instance() or QApplication([])
+        seen = {}
+
+        def spy(self):                       # 不真的弹出来
+            # **在这里就把要的读出来。** 框一销毁,按钮的 C++ 对象跟着
+            # 没了,外面再碰是 `Internal C++ object already deleted`。
+            btn = self.defaultButton()
+            seen["default"] = btn.text() if btn is not None else None
+            seen["roles"] = {self.buttonRole(b) for b in self.buttons()}
+            return 0
+
+        old = QMessageBox.exec
+        QMessageBox.exec = spy
+        try:
+            W.confirm(None, "t", "m", ok_text="删除", cancel_text="取消")
+        finally:
+            QMessageBox.exec = old
+
+        assert seen["default"] is not None, "没设默认按钮"
+        assert seen["default"] == "取消", (
+            f"默认按钮是「{seen['default']}」—— 一路回车会把它点掉")
+        assert {QMessageBox.AcceptRole, QMessageBox.RejectRole} <= seen["roles"], (
+            "按钮没按角色登记,Esc / 关窗的语义是未定义的")
 
 
 class TestCreditIsShown:

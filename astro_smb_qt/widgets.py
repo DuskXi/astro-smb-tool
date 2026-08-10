@@ -14,6 +14,12 @@
 """
 from __future__ import annotations
 
+import logging
+
+from pathlib import Path
+
+log = logging.getLogger(__name__)
+
 from collections.abc import Callable, Iterable, Sequence
 from typing import Any
 
@@ -449,6 +455,70 @@ def _clear_layout(lay) -> None:
             w.deleteLater()
         elif item.layout() is not None:
             _clear_layout(item.layout())
+
+
+
+
+def load_pixmap(path) -> "QPixmap | None":
+    """读一张图。**读不出来而且它在我们的缓存目录里,就删掉它。**
+
+    缓存里出现过读不出来的 PNG(并发写同一个临时文件导致的交错内容,
+    已在 `skymap` / `preview` 那边修掉)。但**已经坏在盘上的那些不会自己
+    好** —— 每次用到都是 libpng 往 stderr 刷一行 `IDAT: CRC error`,
+    界面上那块空着,而且永远空着:代码只判 `isNull()` 然后放弃,
+    从不重建。
+
+    删掉就等于让下一次请求重新生成。只对缓存目录里的文件这么干 ——
+    用户自己的图不许碰。
+    """
+    from PySide6.QtGui import QPixmap
+
+    p = str(path)
+    pix = QPixmap(p)
+    if not pix.isNull():
+        return pix
+    try:
+        from astro_smb_app.preview import cache_dir
+        from astro_smb_app.skymap import skymap_dir
+
+        f = Path(p).resolve()
+        for root in (cache_dir(), skymap_dir()):
+            if f.is_relative_to(Path(root).resolve()):
+                f.unlink(missing_ok=True)
+                log.warning(_("缓存图读不出来,已删除以便重建: %s"), f.name)
+                break
+    except (OSError, ValueError, ImportError):
+        pass
+    return None
+
+def confirm(parent, title: str, message: str, *,
+            ok_text: str | None = None,
+            cancel_text: str | None = None) -> bool:
+    """二次确认。**破坏性动作与要花钱/花流量的动作都得走它。**
+
+    - 默认按钮是「取消」—— 一路回车不该把 8 MB 下载或一次删除点掉。
+    - 按钮文案**说清楚要干什么**(「删除」而不是「确定」)。
+      `QMessageBox.question` 给的是英文 Yes/No,而 "Yes" 不告诉你 Yes 什么。
+
+    **这里是唯一一份。** 原来它只长在 `Page` 上,于是 `Shell` 里那句
+    `self.confirm(...)` 直接 `AttributeError` —— 而那是**语言切换**唯一的
+    出口,点一下就崩。写的时候照着页面的写法抄了调用,没查过 Shell 有没有
+    这个方法;测试断言的是那个框的**文案**,压根没走到弹框这一步。
+    """
+    from PySide6.QtWidgets import QMessageBox
+
+    # **默认值不能写成 `ok_text=_("确定")`** —— 函数默认值是 `def` 执行时
+    # (也就是 import 时)求值的,和模块级常量一样会把翻译冻住。
+    ok_text = _("确定") if ok_text is None else ok_text
+    cancel_text = _("取消") if cancel_text is None else cancel_text
+    box = QMessageBox(parent)
+    box.setWindowTitle(title)
+    box.setText(message)
+    ok = box.addButton(ok_text, QMessageBox.AcceptRole)
+    cancel = box.addButton(cancel_text, QMessageBox.RejectRole)
+    box.setDefaultButton(cancel)
+    box.exec()
+    return box.clickedButton() is ok
 
 
 class Dialog(QDialog):
@@ -1355,8 +1425,8 @@ class ImageView(QLabel):
             self._src = None
             self.clear()
             return False
-        pix = QPixmap(str(path))
-        if pix.isNull():
+        pix = load_pixmap(path)
+        if pix is None:
             self._src = None
             self.clear()
             return False
@@ -1414,8 +1484,8 @@ class ZoomView(QWidget):
             self._src = None
             self.update()
             return False
-        pix = QPixmap(str(path))
-        if pix.isNull():
+        pix = load_pixmap(path)
+        if pix is None:
             self._src = None
             self.update()
             return False

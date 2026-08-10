@@ -520,7 +520,8 @@ class PreviewWorker:
         out = cache_dir() / f"{key}.png"
         if out.exists():
             return str(out)
-        tmp = out.with_name(out.name + ".part")
+        # 唯一临时名,理由同 `skymap.render_altaz`
+        tmp = out.with_name(f"{out.name}.{os.getpid()}.{threading.get_ident()}.part")
         try:
             with Image.open(local) as im:
                 im.thumbnail((THUMB_SIZE, THUMB_SIZE))
