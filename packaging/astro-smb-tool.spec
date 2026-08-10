@@ -70,9 +70,18 @@ _ENTITLEMENTS = os.environ.get("ASTRO_SMB_ENTITLEMENTS") or None
 
 ROOT = Path(SPECPATH).parent          # noqa: F821 - SPECPATH 由 PyInstaller 注入
 
+_ICON = None
+if sys.platform == "win32":
+    _ICON = str(ROOT / "packaging" / "icon.ico")
+elif sys.platform == "darwin":
+    _ICON = str(ROOT / "packaging" / "icon.icns")
+
 datas = [
     # 三元组的第二项是**包内的目标目录**,要和源码树里的相对路径一致。
     (str(ROOT / "astro_smb_app" / "web"), "astro_smb_app/web"),
+    # 窗口图标。exe 自己的图标由下面的 `icon=` 管,这几张是**运行时**
+    # `app.setWindowIcon()` 用的 —— 两回事,少哪个都会缺一处。
+    (str(ROOT / "astro_smb_app" / "icons"), "astro_smb_app/icons"),
 ]
 # `.mo` 逐个收,连目录结构一起 —— gettext 按 `<lang>/LC_MESSAGES/<domain>.mo`
 # 找,少一层就找不到,而找不到的表现是"英文界面显示中文",不是报错。
@@ -177,6 +186,10 @@ exe = EXE(                                                       # noqa: F821
     disable_windowed_traceback=False,
     argv_emulation=sys.platform == "darwin",   # mac 上双击/拖放传参
     target_arch=_TARGET_ARCH,  # mac:瘦成本机架构,见文件头
+    # Windows 吃 `.ico`,macOS 吃 `.icns`;Linux 上 PyInstaller 不用图标
+    # (桌面环境读 `.desktop` 里指的那张 PNG)。两份都由
+    # `scripts/make_icons.py` 从同一个 SVG 生成。
+    icon=_ICON,
     codesign_identity=_CODESIGN_ID,
     entitlements_file=_ENTITLEMENTS,
 )

@@ -167,6 +167,12 @@ def _selftest() -> int:
     ok, why = webhost.available()
     rows.append((ok, "QtWebEngine", why or "可用"))
 
+    from astro_smb_app.icons import icon_dir, icon_files
+
+    files = icon_files()
+    rows.append((len(files) >= 3, "窗口图标",
+                 f"{icon_dir()} -> {len(files)} 档"))
+
     from astro_smb_app import bundle
 
     rows.append((True, "运行方式",
@@ -183,6 +189,27 @@ def _selftest() -> int:
     else:
         print("\n自检通过:随包资源都找得到。")
     return 1 if bad else 0
+
+
+def _set_app_icon(app) -> None:
+    """窗口 / 任务栏 / alt-tab 的图标。
+
+    **多档一起塞进同一个 `QIcon`。** Qt 会按需要挑最接近的那一档;
+    只给一张 256 的话,任务栏那个 16px 是它缩出来的,糊得很明显。
+
+    找不到就算了 —— 没图标是难看,不是坏掉。
+    """
+    from PySide6.QtGui import QIcon, QPixmap
+
+    from astro_smb_app.icons import icon_files
+
+    files = icon_files()
+    if not files:
+        return
+    icon = QIcon()
+    for f in files:
+        icon.addPixmap(QPixmap(str(f)))
+    app.setWindowIcon(icon)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -205,6 +232,7 @@ def main(argv: list[str] | None = None) -> int:
 
     app = QApplication(sys.argv[:1])
     app.setApplicationName("Astro SMB Tool")
+    _set_app_icon(app)
     theme.set_mode(args.theme)
     theme.apply(app)
 

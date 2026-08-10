@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!--
+    Astro SMB Tool 的图标 —— **这是唯一的定稿**,别的尺寸全从它渲。
+
+    形是侧栏那个 `◉` 放大:外环是镜筒/光圈,实心核是星点。不是新想的东西,
+    是把界面上已有的标识拿过来 —— 图标和界面对不上,比没有图标更糟。
+
+    颜色取自 `astro_smb_qt.theme.NORMAL`:ACCENT #4FC3D7、BG #0E1116。
+    改配色时这里要跟着改,`tests/test_icon.py` 会盯着。
+
+    ## 为什么全是圆和环
+
+    **图标九成的时间活在 16×16 上**(任务栏、Finder 侧栏、alt-tab)。
+    同一轮画过两个信息更多的候选(叠传输箭头的、装星野的),16px 上一个
+    糊成噪点、一个只剩个圆圈 —— 那不是画得不好,是那个尺寸装不下。
+    这里刻意只留三层同心圆:缩到 16px 还是"环 + 点"。
+
+    外面那圈 #1E5A66 极暗,大尺寸上是个呼吸感,小尺寸上会自然消失 ——
+    它是**装饰**,不承担辨识。
+  -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="#0E1116"/>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="none"
+        stroke="#232A33" stroke-width="4"/>
+  <circle cx="256" cy="256" r="208" fill="none" stroke="#1E5A66" stroke-width="10"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#4FC3D7" stroke-width="26"/>
+  <circle cx="256" cy="256" r="58" fill="#4FC3D7"/>
+</svg>
